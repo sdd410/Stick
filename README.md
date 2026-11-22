@@ -1,17 +1,84 @@
-# stick
+# Stick
 
-A new Flutter project.
+**A habit app for people who quit by day 3.**
 
-## Getting Started
+Most habit apps are built for perfect streaks. Stick is built for the day you usually give up. It learns when you tend to stop, shrinks the habit to a tiny version on that day, and plays back a message you recorded for yourself when you started.
 
-This project is a starting point for a Flutter application.
+App #001 of [@th3_on3guy](https://www.instagram.com/th3_on3guy/), a series that turns everyday problems into real apps, built in public. Android first (Flutter), iOS later.
 
-A few resources to get you started if this is your first Flutter project:
+## What it does
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+- **30-second setup:** name the habit, add a tiny version (optional) and why you're starting, set a reminder time, and optionally record a first voice or video message.
+- **One button a day:** "Done today". The home screen shows your day as a big number or as a road (switch in Settings).
+- **Learned quit day:** your first miss teaches Stick the day you usually stop. On that day, or the day after a miss, home switches to rescue mode: "Just do this. Get to day 4."
+- **Messages to future you:** short voice or video clips (up to 15 s) that replay story-style on hard days and once a week.
+- **No guilt:** a missed day pauses the count instead of wiping it, and "Pick it back up" continues where you were. "Fresh start" begins a new attempt and keeps the old ones on record.
+- **Progress:** days you showed up, every attempt side by side, and tiny days (they count).
+- **Reminders that survive:** daily local reminders that are planned weeks ahead and rescheduled after a reboot. A battery-saver tip appears on Xiaomi, Samsung, Oppo, Vivo and Realme.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Privacy
+
+Everything stays on the phone. There's no account, no backend, no analytics, and no internet permission at all; the PR checks fail any build that adds one. Microphone and camera are used only to record your own clips.
+
+## Status
+
+- The MVP is built and merged to `main`.
+- Next: device testing, the app icon, and a Google Play closed test (12+ testers for 14 days).
+- Free core plus a one-time Pro unlock, added after testing. No Pro feature exists yet; see `stick-mvp.md` for the Pro list.
+
+## Run it
+
+Requirements:
+- Flutter 3.50+ (Dart 3.14);
+- Android SDK with platform 36 (compileSdk 37 for the plugins);
+- an emulator or a phone with USB debugging.
+
+```bash
+flutter pub get
+flutter run                 # debug build on the connected device
+flutter run --release       # real-world speed
+```
+
+On the emulator, turn on the mic in **Extended Controls (⋯) → Microphone → "Virtual microphone uses host audio input"**. To record video with your Mac's camera, set **Front camera → Webcam0** in the device's settings.
+
+## Develop
+
+```bash
+flutter test                                   # all tests
+flutter analyze --no-fatal-infos               # lints (warnings fail CI)
+dart format lib test                           # formatting
+dart run build_runner build --delete-conflicting-outputs   # after changing database tables
+```
+
+Pull requests into `main` run three checks (`.github/workflows/pr-checks.yml`):
+- **Sanity:** no keys committed, lockfile respected, formatting, generated code up to date.
+- **Code check:** analyze and tests.
+- **Build check:** release APK, a forbidden-permission scan, and target/min SDK.
+
+**Release signing** reads `android/key.properties` (git-ignored). Without it, release builds fall back to the debug key, which Play rejects. See `stick-next-steps.md` to create the upload key. Never commit the key or its passwords.
+
+## Project layout
+
+```
+lib/
+  domain/       pure rules: 3 am day clock, habit engine, reminder planner,
+                replay rules, progress, battery tip
+  data/         SQLite (drift) database and repository
+  controller/   StickController: app state, every action runs in one queue
+  services/     notifications, clip recorder, clip files, device info
+  ui/           setup, home, record, replay, progress, celebration, settings
+test/           unit, widget and end-to-end tests
+drift_schemas/  database schema history for migrations
+docs/superpowers/  design docs and plans for changes after the MVP
+```
+
+## Docs
+
+| File | What's in it |
+|---|---|
+| `stick-mvp.md` | The spec: features, decisions, free vs Pro |
+| `Stick Roadmap to Launch.md` | The road to the Play Store |
+| `stick-build-plan.md` | The original build plan |
+| `stick-next-steps.md` | What's left before launch |
+| `TESTING.md` | Device test checklist |
+| `CLAUDE.md` | Working notes for Claude Code |
