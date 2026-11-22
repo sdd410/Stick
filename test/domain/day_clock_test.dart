@@ -17,6 +17,17 @@ void main() {
     });
   });
 
+  group('dayKeyOf across DST nights', () {
+    test('spring forward night 2026-03-29', () {
+      expect(dayKeyOf(DateTime(2026, 3, 29, 3, 0)), '2026-03-29');
+      expect(dayKeyOf(DateTime(2026, 3, 30, 2, 59)), '2026-03-29');
+    });
+    test('fall back night 2026-10-25', () {
+      expect(dayKeyOf(DateTime(2026, 10, 25, 2, 30)), '2026-10-24');
+      expect(dayKeyOf(DateTime(2026, 10, 25, 3, 0)), '2026-10-25');
+    });
+  });
+
   group('daysBetween', () {
     test('simple range', () {
       expect(daysBetween('2026-11-21', '2026-11-24'), 3);
