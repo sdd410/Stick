@@ -71,20 +71,21 @@ class _HomeRoadState extends State<HomeRoad> {
     final s = widget.state;
     return SizedBox(
       height: _viewport,
-      child: ListView(
+      child: ListView.builder(
         controller: _scroll,
-        children: [
-          for (var d = _lastDay; d >= 1; d--)
-            _Marker(
-              day: d,
-              today: d == s.dayNumber,
-              past: d < s.dayNumber,
-              paused: s.paused,
-              quit: d == s.quitTarget,
-              quitLabel: d == s.quitTarget ? _quitLabel() : null,
-              height: d == s.dayNumber ? _todayHeight : _rowHeight,
-            ),
-        ],
+        itemCount: _lastDay,
+        itemBuilder: (context, i) {
+          final d = _lastDay - i;
+          return _Marker(
+            day: d,
+            today: d == s.dayNumber,
+            past: d < s.dayNumber,
+            paused: s.paused,
+            quit: d == s.quitTarget,
+            quitLabel: d == s.quitTarget ? _quitLabel() : null,
+            height: d == s.dayNumber ? _todayHeight : _rowHeight,
+          );
+        },
       ),
     );
   }
@@ -150,10 +151,12 @@ class _Marker extends StatelessWidget {
     }
 
     final String label;
-    if (quitLabel != null) {
+    if (today && paused) {
+      label = 'Day $day · paused';
+    } else if (quitLabel != null) {
       label = quitLabel!;
     } else if (today) {
-      label = paused ? 'Day $day · paused' : 'Today';
+      label = 'Today';
     } else {
       label = 'Day $day';
     }

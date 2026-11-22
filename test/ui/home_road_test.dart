@@ -75,19 +75,38 @@ void main() {
     expect((circle.decoration as BoxDecoration).color, StickColors.muted);
   });
 
-  testWidgets('long road at 360x640 does not overflow and shows today', (
-    t,
-  ) async {
+  testWidgets('long road at 360x640 does not overflow', (t) async {
     t.view.physicalSize = const Size(360, 640);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
     await t.pumpWidget(road(state(day: 20, quit: 5)));
     await t.pump();
+    expect(t.takeException(), isNull);
+  });
+
+  testWidgets('auto-scrolls so today is inside the road viewport', (t) async {
+    t.view.physicalSize = const Size(360, 640);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    await t.pumpWidget(road(state(day: 3, quit: 30)));
+    await t.pump();
     await t.pump();
     expect(t.takeException(), isNull);
-    // Today's marker is on screen after auto-scroll.
-    final r = t.getRect(find.text('20'));
-    expect(r.top >= 0 && r.bottom <= 640, isTrue);
+    final offset = t
+        .state<ScrollableState>(find.byType(Scrollable))
+        .position
+        .pixels;
+    expect(offset, greaterThan(0));
+    final list = t.getRect(find.byType(ListView));
+    final today = t.getRect(find.text('3'));
+    expect(today.top, greaterThanOrEqualTo(list.top));
+    expect(today.bottom, lessThanOrEqualTo(list.bottom));
+  });
+
+  testWidgets('paused on the quit day still says paused', (t) async {
+    await t.pumpWidget(road(state(day: 5, quit: 5, paused: true)));
+    expect(find.text('Day 5 · paused'), findsOneWidget);
+    expect(find.byIcon(Icons.flag), findsOneWidget);
   });
 
   group('switch', () {
@@ -121,7 +140,9 @@ void main() {
   });
 
   testWidgets('progress counter tap target is at least 48 tall', (t) async {
-    final c = _Fake(state(day: 3));
+    final fakeDb = db_.StickDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(fakeDb.close);
+    final c = _Fake(state(day: 3), fakeDb);
     await t.pumpWidget(
       StickScope(
         controller: c,
@@ -144,11 +165,9 @@ void main() {
 }
 
 class _Fake extends StickController {
-  _Fake(this._h)
+  _Fake(this._h, db_.StickDatabase db)
     : super(
-        repo: StickRepository(
-          db_.StickDatabase.forTesting(NativeDatabase.memory()),
-        ),
+        repo: StickRepository(db),
         clock: DateTime.now,
         reminders: NoopReminderSink(),
       );
