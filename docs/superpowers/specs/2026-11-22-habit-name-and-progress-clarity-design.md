@@ -49,7 +49,7 @@ Attempt 1 · Day 7 ›          ⚙
 
 Your attempts
  Attempt 1 · now   ██████░░░░  6 days ★
- ★ = got past your quit day (Day 3)
+ ★ = got past your quit day
 
 Tiny days                     1
   They count.
@@ -58,12 +58,13 @@ Messages to future you        2 ›
      [ Back to Day 7 ]
 ```
 
-- **Title:** the app bar title is the habit name, not "Progress".
+- **Title:** the app bar title is the habit name, not "Progress". It is 1 line with an ellipsis (2 lines at 1.3x text scale do not fit the 56px toolbar). Home keeps 2 lines.
 - **Section label** "Your attempts" above the bars.
 - **Each bar row** is labeled "Attempt N" (current one: "Attempt N · now") and shows "N days" (or "1 day").
 - **Bar length** is days done in that attempt (its check-ins), not the day number reached. So the current bar shows 6 when the big number shows 6.
+- **Bar track:** each bar has a faint full-width track behind it (muted, about 0.2 alpha), so a 0-day bar still shows and the scale is visible.
 - **Bar scale:** the longest bar or 14 days, whichever is larger, so a single attempt is not always full.
-- **★** keeps its rule (that attempt got past its quit target). A legend line "★ = got past your quit day (Day X)" shows only when a ★ is on screen; X is the current quit target.
+- **★** keeps its rule (that attempt got past its quit target). A legend line "★ = got past your quit day" shows only when a ★ is on screen. Changed after the final review: each ★ is judged against that attempt's own quit target, so the legend no longer prints the current target.
 - **The "Beat your quit day" stat is removed.** The ★ covers it.
 - **Button:** "Get past Day X this time" while today's day number ≤ quit target. After that it reads "Back to Day N" (N = today's day number). It still just goes back to Home.
 

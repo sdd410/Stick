@@ -297,7 +297,7 @@ void main() {
     expect(t.takeException(), isNull);
   });
 
-  testWidgets('counter is not truncated at 360dp', (t) async {
+  testWidgets('counter pill gets all free width at 360dp', (t) async {
     t.view.physicalSize = const Size(360, 640);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
@@ -308,7 +308,10 @@ void main() {
       onOpenSettings: () {},
     );
     // The pill takes all the width the settings icon leaves (360 - 2*24
-    // padding - 48 icon). Flexible + Spacer capped it at about half.
+    // padding - 48 icon). The text is still ellipsized under the wide Ahem
+    // test font; the width assertion relies on that wide font filling the
+    // available width. It guards against the Flexible + Spacer regression
+    // that capped the pill at about half the width.
     final pill = t.getSize(
       find.ancestor(
         of: find.text('Attempt 2 · Day 3'),

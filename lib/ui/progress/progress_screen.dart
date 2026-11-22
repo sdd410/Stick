@@ -38,7 +38,7 @@ class ProgressScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           snap.habit.name,
-          maxLines: 2,
+          maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
       ),
@@ -95,15 +95,29 @@ class ProgressScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     LayoutBuilder(
-                      builder: (_, box) => Container(
-                        height: 16,
-                        width: box.maxWidth * b.daysDone / maxDays,
-                        decoration: BoxDecoration(
-                          color: b.isCurrent
-                              ? StickColors.lime
-                              : StickColors.muted,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
+                      builder: (_, box) => Stack(
+                        children: [
+                          // Faint full-width track: shows the 0-day bar and
+                          // the scale.
+                          Container(
+                            height: 16,
+                            width: box.maxWidth,
+                            decoration: BoxDecoration(
+                              color: StickColors.muted.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          Container(
+                            height: 16,
+                            width: box.maxWidth * b.daysDone / maxDays,
+                            decoration: BoxDecoration(
+                              color: b.isCurrent
+                                  ? StickColors.lime
+                                  : StickColors.muted,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -113,7 +127,7 @@ class ProgressScreen extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
-                  '★ = got past your quit day (Day ${p.nextQuitTarget})',
+                  '★ = got past your quit day',
                   style: textTheme.bodySmall?.copyWith(
                     color: StickColors.muted,
                   ),

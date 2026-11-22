@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stick/controller/stick_controller.dart';
 import 'package:stick/controller/stick_scope.dart';
@@ -51,6 +52,7 @@ void main() {
     int target = 6,
     String name = 'Walk',
     bool star = true,
+    bool currentCheckIn = true,
   }) async {
     final ended = Attempt(
       number: 1,
@@ -78,7 +80,8 @@ void main() {
       allCheckIns: [
         for (var i = 1; i <= 5; i++)
           CheckIn(day: '2026-11-0$i', attempt: 1, tiny: i == 2),
-        const CheckIn(day: '2026-11-10', attempt: 2, tiny: false),
+        if (currentCheckIn)
+          const CheckIn(day: '2026-11-10', attempt: 2, tiny: false),
       ],
       clips: clips,
       flags: const Flags(
@@ -137,7 +140,7 @@ void main() {
     expect(find.text('5 days'), findsOneWidget);
     expect(find.text('1 day'), findsOneWidget);
     expect(find.textContaining('★'), findsAtLeastNWidgets(1));
-    expect(find.text('★ = got past your quit day (Day 6)'), findsOneWidget);
+    expect(find.text('★ = got past your quit day'), findsOneWidget);
     expect(find.text('Beat your quit day'), findsNothing);
     expect(find.text('Tiny days'), findsOneWidget);
   });
@@ -204,5 +207,29 @@ void main() {
     await pump(t, clips: [clip], onOpenReplay: () {});
     expect(find.textContaining('miss'), findsNothing);
     expect(find.textContaining('Miss'), findsNothing);
+  });
+
+  testWidgets('title stays on one line inside the toolbar', (t) async {
+    t.view.physicalSize = const Size(360, 640);
+    t.view.devicePixelRatio = 1;
+    t.platformDispatcher.textScaleFactorTestValue = 1.3;
+    addTearDown(() {
+      t.view.reset();
+      t.platformDispatcher.clearTextScaleFactorTestValue();
+    });
+    const name = 'Read twenty pages of a book every single night';
+    await pump(t, name: name);
+    final title = t.renderObject<RenderParagraph>(
+      find.descendant(of: find.byType(AppBar), matching: find.text(name)),
+    );
+    expect(title.size.height, lessThanOrEqualTo(56));
+  });
+
+  testWidgets('0-day current attempt shows 0 days and does not throw', (
+    t,
+  ) async {
+    await pump(t, currentCheckIn: false);
+    expect(find.text('0 days'), findsOneWidget);
+    expect(t.takeException(), isNull);
   });
 }
