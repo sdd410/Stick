@@ -29,4 +29,46 @@ void main() {
     expect(bg, const Color(0xFF0B0B12));
     expect(find.text('Step 1 of 3'), findsOneWidget);
   });
+
+  testWidgets('a failed first load shows a retry screen, not a blank one', (
+    tester,
+  ) async {
+    final db = db_.StickDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(db.close);
+    final repo = _FlakyRepo(db);
+    final c = StickController(
+      repo: repo,
+      clock: DateTime.now,
+      reminders: NoopReminderSink(),
+    );
+    await tester.runAsync(() => c.open().catchError((Object _) {}));
+    await tester.pumpWidget(StickScope(controller: c, child: const StickApp()));
+
+    expect(c.loaded, isFalse);
+    expect(find.text('Something went wrong. Try again'), findsOneWidget);
+
+    await tester.tap(find.text('Try again'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pump();
+
+    expect(c.loadError, isNull);
+    expect(find.text('Something went wrong. Try again'), findsNothing);
+    expect(find.text('Step 1 of 3'), findsOneWidget);
+  });
+}
+
+class _FlakyRepo extends StickRepository {
+  _FlakyRepo(super.db);
+  bool fail = true;
+
+  @override
+  Future<Snapshot?> load() async {
+    if (fail) {
+      fail = false;
+      throw StateError('disk hiccup');
+    }
+    return super.load();
+  }
 }

@@ -41,6 +41,7 @@ class StickController extends ChangeNotifier {
   Snapshot? _snapshot;
   HomeState? _home;
   bool _loaded = false;
+  Object? _loadError;
 
   Snapshot? get snapshot => _snapshot;
   HomeState? get home => _home;
@@ -48,6 +49,10 @@ class StickController extends ChangeNotifier {
   /// False until the first load finishes, so the UI never flashes setup.
   bool get loaded => _loaded;
   bool get needsSetup => _loaded && _snapshot == null;
+
+  /// The error of the last [open] that failed, or null. Cleared by the next
+  /// successful [open]. The UI shows a retry screen while not [loaded].
+  Object? get loadError => _loadError;
 
   DayKey get _today => dayKeyOf(_clock());
 
@@ -108,7 +113,11 @@ class StickController extends ChangeNotifier {
         s = await _load();
       }
       _loaded = true;
+      _loadError = null;
       await _reschedule(s);
+    } catch (e) {
+      _loadError = e;
+      rethrow;
     } finally {
       notifyListeners();
     }

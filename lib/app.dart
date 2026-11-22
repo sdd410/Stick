@@ -179,10 +179,19 @@ class _RootState extends State<_Root> {
     );
   }
 
+  void _retry() {
+    StickScope.of(context)
+        .open()
+        .catchError((Object e) => debugPrint('retry open failed: $e'));
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = StickScope.of(context);
-    if (!c.loaded) return const Scaffold();
+    if (!c.loaded) {
+      if (c.loadError != null) return _LoadErrorScreen(onRetry: _retry);
+      return const Scaffold();
+    }
     if (c.needsSetup) _inSetup = true;
     if (_inSetup) {
       return SetupFlow(
@@ -203,4 +212,33 @@ class _RootState extends State<_Root> {
       onSeeAll: widget.files == null ? null : _openClipList,
     );
   }
+}
+
+/// Shown when the first load failed, so the launch is never a blank screen.
+class _LoadErrorScreen extends StatelessWidget {
+  const _LoadErrorScreen({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    body: SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Something went wrong. Try again',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 24),
+            FilledButton(onPressed: onRetry, child: const Text('Try again')),
+          ],
+        ),
+      ),
+    ),
+  );
 }
