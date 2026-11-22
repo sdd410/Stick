@@ -36,7 +36,7 @@ void main() {
     await show(t);
     c.add(1.0);
     await t.pump();
-    await t.pump(const Duration(milliseconds: 200));
+    await t.pumpAndSettle();
     expect(h(t, 29), 56);
     expect(h(t, 28), 4);
   });
@@ -47,7 +47,7 @@ void main() {
     await t.pump();
     c.add(0.0);
     await t.pump();
-    await t.pump(const Duration(milliseconds: 200));
+    await t.pumpAndSettle();
     expect(h(t, 28), 56);
     expect(h(t, 29), 4);
   });
@@ -56,12 +56,40 @@ void main() {
     await show(t);
     c.add(2.0);
     await t.pump();
-    await t.pump(const Duration(milliseconds: 200));
+    await t.pumpAndSettle();
     expect(h(t, 29), 56);
     c.add(-1);
     await t.pump();
-    await t.pump(const Duration(milliseconds: 200));
+    await t.pumpAndSettle();
     expect(h(t, 29), 4);
+  });
+
+  testWidgets('ring follows the voice level', (t) async {
+    await show(t);
+    double opacity() => t
+        .widget<AnimatedOpacity>(
+          find.ancestor(
+            of: find.byKey(const Key('voice-ring')),
+            matching: find.byType(AnimatedOpacity),
+          ),
+        )
+        .opacity;
+    double scale() => t
+        .widget<AnimatedScale>(
+          find.ancestor(
+            of: find.byKey(const Key('voice-ring')),
+            matching: find.byType(AnimatedScale),
+          ),
+        )
+        .scale;
+    c.add(0.0);
+    await t.pumpAndSettle();
+    expect(opacity(), closeTo(0.15, 1e-9));
+    expect(scale(), closeTo(0.72, 1e-9));
+    c.add(1.0);
+    await t.pumpAndSettle();
+    expect(opacity(), closeTo(0.85, 1e-9));
+    expect(scale(), closeTo(1.0, 1e-9));
   });
 
   testWidgets('ring hidden with reduced motion', (t) async {

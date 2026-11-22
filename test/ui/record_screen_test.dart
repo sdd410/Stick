@@ -197,8 +197,7 @@ void main() {
     );
     expect(t.getSize(circle), const Size(72, 72));
     await t.tap(btn);
-    await t.pump();
-    await settle(t);
+    await t.pumpAndSettle();
   });
 
   testWidgets('voice recording shows the level view', (t) async {
@@ -207,8 +206,7 @@ void main() {
     await tapRecord(t);
     expect(find.byType(VoiceLevelView), findsOneWidget);
     await t.tap(find.byKey(const Key('record-button')));
-    await t.pump();
-    await settle(t);
+    await t.pumpAndSettle();
   });
 
   testWidgets('no overflow at 360dp, text scale 1.3', (t) async {
@@ -222,8 +220,7 @@ void main() {
     await tapRecord(t);
     expect(t.takeException(), isNull);
     await t.tap(find.byKey(const Key('record-button')));
-    await t.pump();
-    await settle(t);
+    await t.pumpAndSettle();
   });
 
   testWidgets('denied permission shows Open settings and does not crash', (

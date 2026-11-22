@@ -14,19 +14,13 @@ class VoiceLevelView extends StatefulWidget {
   State<VoiceLevelView> createState() => _VoiceLevelViewState();
 }
 
-class _VoiceLevelViewState extends State<VoiceLevelView>
-    with SingleTickerProviderStateMixin {
+class _VoiceLevelViewState extends State<VoiceLevelView> {
   static const _count = 30;
   static const _minH = 4.0;
   static const _maxH = 56.0;
 
   final List<double> _levels = List<double>.filled(_count, 0, growable: true);
   StreamSubscription<double>? _sub;
-  late final AnimationController _pulse = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1400),
-  );
-  bool _pulsing = false;
 
   @override
   void initState() {
@@ -44,20 +38,13 @@ class _VoiceLevelViewState extends State<VoiceLevelView>
   @override
   void dispose() {
     _sub?.cancel();
-    _pulse.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final reduced = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
-    if (reduced && _pulsing) {
-      _pulse.stop();
-      _pulsing = false;
-    } else if (!reduced && !_pulsing) {
-      _pulse.repeat();
-      _pulsing = true;
-    }
+    final lvl = _levels.last;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -68,29 +55,22 @@ class _VoiceLevelViewState extends State<VoiceLevelView>
             alignment: Alignment.center,
             children: [
               if (!reduced)
-                AnimatedBuilder(
-                  animation: _pulse,
-                  builder: (context, _) {
-                    final t = _pulse.value;
-                    return Opacity(
-                      opacity: 1 - t,
-                      child: Transform.scale(
-                        scale: 72 / 110 + (1 - 72 / 110) * t,
-                        child: Container(
-                          key: const Key('voice-ring'),
-                          width: 110,
-                          height: 110,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: StickColors.lime,
-                              width: 2,
-                            ),
-                          ),
-                        ),
+                AnimatedOpacity(
+                  opacity: 0.15 + 0.7 * lvl,
+                  duration: const Duration(milliseconds: 100),
+                  child: AnimatedScale(
+                    scale: 0.72 + 0.28 * lvl,
+                    duration: const Duration(milliseconds: 100),
+                    child: Container(
+                      key: const Key('voice-ring'),
+                      width: 110,
+                      height: 110,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: StickColors.lime, width: 2),
                       ),
-                    );
-                  },
+                    ),
+                  ),
                 ),
               Container(
                 width: 72,
