@@ -187,6 +187,9 @@ class _NoopRecorder implements ClipRecorder {
   Future<PermissionResult> ensurePermission(ClipType t) async =>
       PermissionResult.granted;
   @override
+  Future<PermissionResult> permissionStatus(ClipType t) async =>
+      PermissionResult.granted;
+  @override
   Future<void> prepare(ClipType t) async {}
   @override
   Future<void> start(ClipType t, String path) async {}

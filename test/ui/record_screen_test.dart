@@ -28,8 +28,24 @@ class FakeRecorder implements ClipRecorder {
 
   void emit(Duration d) => _elapsed.add(d);
 
+  int requests = 0;
+  int statusChecks = 0;
+
+  /// What a status-only check reports; defaults to [permission].
+  PermissionResult? status;
+
   @override
-  Future<PermissionResult> ensurePermission(ClipType t) async => permission;
+  Future<PermissionResult> ensurePermission(ClipType t) async {
+    requests++;
+    return permission;
+  }
+
+  @override
+  Future<PermissionResult> permissionStatus(ClipType t) async {
+    statusChecks++;
+    return status ?? permission;
+  }
+
   @override
   Future<void> prepare(ClipType t) async {}
   @override
@@ -309,5 +325,49 @@ void main() {
     await settle(t);
     await t.pumpAndSettle();
     expect(c.snapshot!.clips, hasLength(1));
+  });
+
+  testWidgets('resuming after a deny does not ask again', (t) async {
+    rec.permission = PermissionResult.denied;
+    await pump(t);
+    await choose(t, 'Voice');
+    expect(rec.requests, 1);
+    // The system permission dialog pauses and resumes the activity.
+    t.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    t.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await t.pump();
+    await t.pump();
+    expect(rec.requests, 1);
+    expect(rec.statusChecks, 0);
+    expect(find.text('Open settings'), findsOneWidget);
+  });
+
+  testWidgets('resuming from Open settings re-checks without asking', (
+    t,
+  ) async {
+    rec.permission = PermissionResult.permanentlyDenied;
+    await pump(t);
+    await choose(t, 'Voice');
+    await t.tap(find.text('Open settings'));
+    await t.pump();
+    // Still denied after coming back: stays blocked, no request.
+    t.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await t.pump();
+    await t.pump();
+    expect(rec.statusChecks, 1);
+    expect(rec.requests, 1);
+    expect(find.text('Open settings'), findsOneWidget);
+
+    // Granted in settings: the next return from settings moves on.
+    rec.status = PermissionResult.granted;
+    rec.permission = PermissionResult.granted;
+    await t.tap(find.text('Open settings'));
+    await t.pump();
+    t.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await t.pump();
+    await t.pump();
+    await t.pump();
+    expect(rec.statusChecks, 2);
+    expect(find.byKey(const Key('record-button')), findsOneWidget);
   });
 }

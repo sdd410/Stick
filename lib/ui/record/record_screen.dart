@@ -40,6 +40,9 @@ class _RecordScreenState extends State<RecordScreen>
   bool _stopping = false;
   bool _starting = false;
   bool _saving = false;
+  // Only a return from system settings re-checks; the permission dialog also
+  // pauses and resumes the activity and must not trigger a second prompt.
+  bool _sentToSettings = false;
   StreamSubscription<Duration>? _sub;
 
   ClipRecorder get _rec => widget.recorder;
@@ -82,9 +85,29 @@ class _RecordScreenState extends State<RecordScreen>
             state == AppLifecycleState.inactive) &&
         _phase == _Phase.recording) {
       _stop();
-    } else if (state == AppLifecycleState.resumed && _phase == _Phase.blocked) {
+    } else if (state == AppLifecycleState.resumed &&
+        _phase == _Phase.blocked &&
+        _sentToSettings) {
       // The user may have granted it in system settings.
-      _choose(_type);
+      _sentToSettings = false;
+      _recheckAfterSettings();
+    }
+  }
+
+  /// Reads the permission state (never prompts) and carries on if it is now
+  /// granted.
+  Future<void> _recheckAfterSettings() async {
+    final type = _type;
+    try {
+      final status = await _rec.permissionStatus(type);
+      if (!mounted || _phase != _Phase.blocked) return;
+      if (status == PermissionResult.granted) {
+        await _choose(type);
+      } else {
+        setState(() => _permission = status);
+      }
+    } catch (e) {
+      debugPrint('permission re-check failed: $e');
     }
   }
 
@@ -284,6 +307,7 @@ class _RecordScreenState extends State<RecordScreen>
             const SizedBox(height: 24),
             FilledButton(
               onPressed: () async {
+                _sentToSettings = true;
                 try {
                   await widget.openSettings();
                 } catch (e) {

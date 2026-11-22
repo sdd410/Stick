@@ -23,7 +23,11 @@ class RecordedClip {
 
 /// Everything the record screen needs from the platform, so tests can fake it.
 abstract class ClipRecorder {
+  /// Asks for the permissions [t] needs (may show the system dialog).
   Future<PermissionResult> ensurePermission(ClipType t);
+
+  /// Reads the current permission state without ever showing a dialog.
+  Future<PermissionResult> permissionStatus(ClipType t);
 
   /// Gets the camera ready so [buildPreview] can show it (video only).
   Future<void> prepare(ClipType t);
@@ -63,19 +67,32 @@ class DeviceClipRecorder implements ClipRecorder {
   @override
   Stream<double> get level => _level.stream;
 
-  @override
-  Future<PermissionResult> ensurePermission(ClipType t) async {
-    final needed = [
-      Permission.microphone,
-      if (t == ClipType.video) Permission.camera,
-    ];
-    final results = await needed.request();
-    final all = results.values;
+  List<Permission> _needed(ClipType t) => [
+    Permission.microphone,
+    if (t == ClipType.video) Permission.camera,
+  ];
+
+  PermissionResult _summarize(Iterable<PermissionStatus> all) {
     if (all.every((s) => s.isGranted)) return PermissionResult.granted;
     if (all.any((s) => s.isPermanentlyDenied)) {
       return PermissionResult.permanentlyDenied;
     }
     return PermissionResult.denied;
+  }
+
+  @override
+  Future<PermissionResult> ensurePermission(ClipType t) async {
+    final results = await _needed(t).request();
+    return _summarize(results.values);
+  }
+
+  @override
+  Future<PermissionResult> permissionStatus(ClipType t) async {
+    final all = <PermissionStatus>[];
+    for (final p in _needed(t)) {
+      all.add(await p.status);
+    }
+    return _summarize(all);
   }
 
   @override
