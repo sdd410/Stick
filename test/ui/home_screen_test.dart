@@ -69,9 +69,11 @@ Snapshot snap({
   List<Clip> clips = const [],
   String? tiny,
   String why = 'Be healthier',
+  String name = 'Walk',
+  HomeStyle homeStyle = HomeStyle.bigNumber,
 }) => Snapshot(
   habit: Habit(
-    name: 'Walk',
+    name: name,
     tiny: tiny,
     why: why,
     reminderMinutes: 1140,
@@ -81,10 +83,10 @@ Snapshot snap({
   ended: const [],
   allCheckIns: const [],
   clips: clips,
-  flags: const Flags(
+  flags: Flags(
     day4Celebrated: false,
     lastWeeklyReplayDayNumber: null,
-    homeStyle: HomeStyle.bigNumber,
+    homeStyle: homeStyle,
   ),
 );
 
@@ -257,6 +259,67 @@ void main() {
     await pump(t, state(attempt: 4, day: 2), onOpenProgress: () => opened++);
     await t.tap(find.text('Attempt 4 · Day 2'));
     expect(opened, 1);
+  });
+
+  testWidgets('shows the habit name', (t) async {
+    await pump(t, state());
+    expect(find.text('Walk'), findsOneWidget);
+    await pump(t, state(), sn: snap(homeStyle: HomeStyle.road));
+    await t.pump();
+    expect(find.text('Walk'), findsOneWidget);
+  });
+
+  testWidgets('counter shows a chevron when progress can open', (t) async {
+    await pump(t, state(), onOpenProgress: () {});
+    expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+  });
+
+  testWidgets('no chevron without progress callback', (t) async {
+    await pump(t, state());
+    expect(find.byIcon(Icons.chevron_right), findsNothing);
+  });
+
+  testWidgets('long name does not overflow', (t) async {
+    t.view.physicalSize = const Size(360, 640);
+    t.view.devicePixelRatio = 1;
+    t.platformDispatcher.textScaleFactorTestValue = 1.3;
+    addTearDown(() {
+      t.view.reset();
+      t.platformDispatcher.clearTextScaleFactorTestValue();
+    });
+    await pump(
+      t,
+      state(attempt: 2, day: 3, rescue: RescueReason.quitDay, lastQuitDay: 3),
+      sn: snap(name: 'Read twenty pages of a book every single night'),
+      onOpenProgress: () {},
+      onOpenSettings: () {},
+    );
+    expect(t.takeException(), isNull);
+  });
+
+  testWidgets('counter pill gets all free width at 360dp', (t) async {
+    t.view.physicalSize = const Size(360, 640);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    await pump(
+      t,
+      state(attempt: 2, day: 3),
+      onOpenProgress: () {},
+      onOpenSettings: () {},
+    );
+    // The pill takes all the width the settings icon leaves (360 - 2*24
+    // padding - 48 icon). The text is still ellipsized under the wide Ahem
+    // test font; the width assertion relies on that wide font filling the
+    // available width. It guards against the Flexible + Spacer regression
+    // that capped the pill at about half the width.
+    final pill = t.getSize(
+      find.ancestor(
+        of: find.text('Attempt 2 · Day 3'),
+        matching: find.byType(InkWell),
+      ),
+    );
+    expect(pill.width, 264);
+    expect(pill.height, greaterThanOrEqualTo(48));
   });
 
   testWidgets('clip prompt banner shows on 7/14/21 and opens recorder', (

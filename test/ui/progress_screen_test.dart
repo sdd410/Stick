@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stick/controller/stick_controller.dart';
 import 'package:stick/controller/stick_scope.dart';
@@ -47,19 +48,28 @@ void main() {
     WidgetTester t, {
     List<Clip> clips = const [],
     VoidCallback? onOpenReplay,
+    int day = 2,
+    int target = 6,
+    String name = 'Walk',
+    bool star = true,
+    bool currentCheckIn = true,
   }) async {
     final ended = Attempt(
       number: 1,
       startDay: '2026-11-01',
-      quitTarget: 3,
+      quitTarget: star ? 3 : 9,
       firstMissDay: 6,
       finalDay: 5,
       endedDay: '2026-11-10',
     );
-    final current = Attempt(number: 2, startDay: '2026-11-10', quitTarget: 6);
+    final current = Attempt(
+      number: 2,
+      startDay: '2026-11-10',
+      quitTarget: target,
+    );
     final snap = Snapshot(
       habit: Habit(
-        name: 'Walk',
+        name: name,
         tiny: null,
         why: 'x',
         reminderMinutes: 1140,
@@ -70,7 +80,8 @@ void main() {
       allCheckIns: [
         for (var i = 1; i <= 5; i++)
           CheckIn(day: '2026-11-0$i', attempt: 1, tiny: i == 2),
-        const CheckIn(day: '2026-11-10', attempt: 2, tiny: false),
+        if (currentCheckIn)
+          const CheckIn(day: '2026-11-10', attempt: 2, tiny: false),
       ],
       clips: clips,
       flags: const Flags(
@@ -79,13 +90,13 @@ void main() {
         homeStyle: HomeStyle.bigNumber,
       ),
     );
-    const h = HomeState(
+    final h = HomeState(
       attemptNumber: 2,
-      dayNumber: 2,
+      dayNumber: day,
       checkedInToday: true,
       paused: false,
       rescue: RescueReason.none,
-      quitTarget: 6,
+      quitTarget: target,
       lastQuitDay: 6,
       showDay4: false,
       weeklyReplayDue: false,
@@ -121,11 +132,49 @@ void main() {
     await pump(t);
     expect(find.text('6'), findsOneWidget); // days showed up
     expect(find.text('Days you showed up'), findsOneWidget);
-    expect(find.text('Day 5 ★'), findsOneWidget);
-    expect(find.text('Day 2'), findsOneWidget);
-    expect(find.text('now'), findsOneWidget);
-    expect(find.text('Beat your quit day'), findsOneWidget);
+    expect(find.text('Walk'), findsOneWidget);
+    expect(find.text('Progress'), findsNothing);
+    expect(find.text('Your attempts'), findsOneWidget);
+    expect(find.text('Attempt 1'), findsOneWidget);
+    expect(find.text('Attempt 2 · now'), findsOneWidget);
+    expect(find.text('5 days'), findsOneWidget);
+    expect(find.text('1 day'), findsOneWidget);
+    expect(find.textContaining('★'), findsAtLeastNWidgets(1));
+    expect(find.text('★ = got past your quit day'), findsOneWidget);
+    expect(find.text('Beat your quit day'), findsNothing);
     expect(find.text('Tiny days'), findsOneWidget);
+  });
+
+  testWidgets('button says Back to Day N once past the quit day', (t) async {
+    await pump(t, day: 4, target: 3);
+    expect(find.text('Back to Day 4'), findsOneWidget);
+    expect(find.textContaining('Get past'), findsNothing);
+    await t.ensureVisible(find.text('Back to Day 4'));
+    await t.tap(find.text('Back to Day 4'));
+    await t.pumpAndSettle();
+    expect(find.byType(ProgressScreen), findsNothing);
+  });
+
+  testWidgets('button keeps Get past on the quit day', (t) async {
+    await pump(t, day: 3, target: 3);
+    expect(find.text('Get past Day 3 this time'), findsOneWidget);
+  });
+
+  testWidgets('no legend without a star', (t) async {
+    await pump(t, star: false);
+    expect(find.textContaining('★ ='), findsNothing);
+  });
+
+  testWidgets('long name does not overflow', (t) async {
+    t.view.physicalSize = const Size(360, 640);
+    t.view.devicePixelRatio = 1;
+    t.platformDispatcher.textScaleFactorTestValue = 1.3;
+    addTearDown(() {
+      t.view.reset();
+      t.platformDispatcher.clearTextScaleFactorTestValue();
+    });
+    await pump(t, name: 'Read twenty pages of a book every single night');
+    expect(t.takeException(), isNull);
   });
 
   testWidgets('next step button label', (t) async {
@@ -158,5 +207,29 @@ void main() {
     await pump(t, clips: [clip], onOpenReplay: () {});
     expect(find.textContaining('miss'), findsNothing);
     expect(find.textContaining('Miss'), findsNothing);
+  });
+
+  testWidgets('title stays on one line inside the toolbar', (t) async {
+    t.view.physicalSize = const Size(360, 640);
+    t.view.devicePixelRatio = 1;
+    t.platformDispatcher.textScaleFactorTestValue = 1.3;
+    addTearDown(() {
+      t.view.reset();
+      t.platformDispatcher.clearTextScaleFactorTestValue();
+    });
+    const name = 'Read twenty pages of a book every single night';
+    await pump(t, name: name);
+    final title = t.renderObject<RenderParagraph>(
+      find.descendant(of: find.byType(AppBar), matching: find.text(name)),
+    );
+    expect(title.size.height, lessThanOrEqualTo(56));
+  });
+
+  testWidgets('0-day current attempt shows 0 days and does not throw', (
+    t,
+  ) async {
+    await pump(t, currentCheckIn: false);
+    expect(find.text('0 days'), findsOneWidget);
+    expect(t.takeException(), isNull);
   });
 }

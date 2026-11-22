@@ -5,12 +5,16 @@ class AttemptBar {
   const AttemptBar({
     required this.number,
     required this.length,
+    required this.daysDone,
     required this.beatQuitDay,
     required this.isCurrent,
   });
 
   final int number;
   final int length;
+
+  /// Check-ins in this attempt (days actually done).
+  final int daysDone;
   final bool beatQuitDay;
   final bool isCurrent;
 }
@@ -21,7 +25,6 @@ class Progress {
   const Progress({
     required this.daysShowedUp,
     required this.bars,
-    required this.quitDaysBeaten,
     required this.tinyDays,
     required this.clipCount,
     required this.nextQuitTarget,
@@ -29,7 +32,6 @@ class Progress {
 
   final int daysShowedUp;
   final List<AttemptBar> bars;
-  final int quitDaysBeaten;
   final int tinyDays;
   final int clipCount;
   final int nextQuitTarget;
@@ -40,13 +42,13 @@ Progress computeProgress(Snapshot s, HomeState h) {
   final ended = [...s.ended]..sort((a, b) => a.number.compareTo(b.number));
   for (final a in ended) {
     // Same rule as finalDayOf: the day it stopped on is check-ins + 1.
-    final length =
-        a.finalDay ??
-        s.allCheckIns.where((c) => c.attempt == a.number).length + 1;
+    final done = s.allCheckIns.where((c) => c.attempt == a.number).length;
+    final length = a.finalDay ?? done + 1;
     bars.add(
       AttemptBar(
         number: a.number,
         length: length,
+        daysDone: done,
         beatQuitDay: length > a.quitTarget,
         isCurrent: false,
       ),
@@ -56,6 +58,7 @@ Progress computeProgress(Snapshot s, HomeState h) {
     AttemptBar(
       number: s.current.number,
       length: h.dayNumber,
+      daysDone: s.currentCheckIns.length,
       beatQuitDay: h.dayNumber > s.current.quitTarget,
       isCurrent: true,
     ),
@@ -63,7 +66,6 @@ Progress computeProgress(Snapshot s, HomeState h) {
   return Progress(
     daysShowedUp: s.allCheckIns.map((c) => c.day).toSet().length,
     bars: bars,
-    quitDaysBeaten: bars.where((b) => b.beatQuitDay).length,
     tinyDays: s.allCheckIns
         .where((c) => c.tiny)
         .map((c) => c.day)
