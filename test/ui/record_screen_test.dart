@@ -28,6 +28,7 @@ class FakeRecorder implements ClipRecorder {
   final _level = StreamController<double>.broadcast();
 
   void emit(Duration d) => _elapsed.add(d);
+  void emitLevel(double v) => _level.add(v);
 
   int requests = 0;
   int statusChecks = 0;
@@ -219,6 +220,39 @@ void main() {
     await choose(t, 'Voice');
     await tapRecord(t);
     expect(t.takeException(), isNull);
+    await t.tap(find.byKey(const Key('record-button')));
+    await t.pumpAndSettle();
+  });
+
+  testWidgets('record button label switches when recording starts', (t) async {
+    final handle = t.ensureSemantics();
+    await pump(t);
+    await choose(t, 'Voice');
+    expect(find.bySemanticsLabel('Start recording'), findsOneWidget);
+    await tapRecord(t);
+    expect(find.bySemanticsLabel('Stop recording'), findsOneWidget);
+    expect(find.bySemanticsLabel('Start recording'), findsNothing);
+    await t.tap(find.byKey(const Key('record-button')));
+    await t.pumpAndSettle();
+    handle.dispose();
+  });
+
+  testWidgets('voice bars reset between takes', (t) async {
+    await pump(t);
+    await choose(t, 'Voice');
+    await tapRecord(t);
+    rec.emitLevel(1.0);
+    await t.pumpAndSettle();
+    expect(t.getSize(find.byKey(const Key('voice-bar-29'))).height, 56);
+    await t.tap(find.byKey(const Key('record-button')));
+    await t.pump();
+    await settle(t);
+    await t.tap(find.text('Redo'));
+    await t.pump();
+    await settle(t);
+    await tapRecord(t);
+    await t.pumpAndSettle();
+    expect(t.getSize(find.byKey(const Key('voice-bar-29'))).height, 4);
     await t.tap(find.byKey(const Key('record-button')));
     await t.pumpAndSettle();
   });

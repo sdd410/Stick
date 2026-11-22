@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../theme.dart';
 
-/// Live voice bars (newest on the right) under a mic with a pulsing ring.
+/// Live voice bars (newest on the right) under a mic whose ring follows the voice level.
 class VoiceLevelView extends StatefulWidget {
   const VoiceLevelView({super.key, required this.level});
 
@@ -25,14 +25,25 @@ class _VoiceLevelViewState extends State<VoiceLevelView> {
   @override
   void initState() {
     super.initState();
-    _sub = widget.level.listen((v) {
-      if (!mounted) return;
-      setState(() {
-        _levels
-          ..removeAt(0)
-          ..add(v.isNaN ? 0.0 : v.clamp(0.0, 1.0));
-      });
+    _sub = _listen();
+  }
+
+  StreamSubscription<double> _listen() => widget.level.listen((v) {
+    if (!mounted) return;
+    setState(() {
+      _levels
+        ..removeAt(0)
+        ..add(v.isNaN ? 0.0 : v.clamp(0.0, 1.0));
     });
+  });
+
+  @override
+  void didUpdateWidget(VoiceLevelView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.level != widget.level) {
+      _sub?.cancel();
+      _sub = _listen();
+    }
   }
 
   @override
@@ -87,27 +98,30 @@ class _VoiceLevelViewState extends State<VoiceLevelView> {
         const SizedBox(height: 24),
         SizedBox(
           height: _maxH,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              for (var i = 0; i < _count; i++) ...[
-                if (i > 0) const SizedBox(width: 3),
-                Opacity(
-                  opacity: i < _count ~/ 3 ? 0.55 : 1,
-                  child: AnimatedContainer(
+          child: RepaintBoundary(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                for (var i = 0; i < _count; i++) ...[
+                  if (i > 0) const SizedBox(width: 3),
+                  AnimatedContainer(
                     key: Key('voice-bar-$i'),
-                    duration: const Duration(milliseconds: 90),
+                    duration: reduced
+                        ? Duration.zero
+                        : const Duration(milliseconds: 90),
                     width: 4,
                     height: _minH + (_maxH - _minH) * _levels[i],
                     decoration: BoxDecoration(
-                      color: StickColors.lime,
+                      color: StickColors.lime.withValues(
+                        alpha: i < _count ~/ 3 ? 0.55 : 1,
+                      ),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ],

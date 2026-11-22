@@ -390,9 +390,11 @@ class _RecordScreenState extends State<RecordScreen>
                   child: Center(child: _rec.buildPreview(context)),
                 )
               : Center(
-                  child: VoiceLevelView(
-                    key: ValueKey(_path),
-                    level: _rec.level,
+                  child: ExcludeSemantics(
+                    child: VoiceLevelView(
+                      key: ValueKey(_path),
+                      level: _rec.level,
+                    ),
                   ),
                 ),
         ),
@@ -419,28 +421,32 @@ class _RecordScreenState extends State<RecordScreen>
                   backgroundColor: StickColors.muted.withValues(alpha: 0.4),
                 ),
               ),
-              GestureDetector(
-                key: const Key('record-button'),
-                onTap: recording ? _stop : _start,
-                child: Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: StickColors.lime,
-                    shape: BoxShape.circle,
+              Semantics(
+                button: true,
+                label: recording ? 'Stop recording' : 'Start recording',
+                child: GestureDetector(
+                  key: const Key('record-button'),
+                  onTap: recording ? _stop : _start,
+                  child: Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: StickColors.lime,
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: recording
+                        ? Container(
+                            key: const Key('stop-square'),
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: StickColors.bg,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          )
+                        : null,
                   ),
-                  alignment: Alignment.center,
-                  child: recording
-                      ? Container(
-                          key: const Key('stop-square'),
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            color: StickColors.bg,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                        )
-                      : null,
                 ),
               ),
             ],
