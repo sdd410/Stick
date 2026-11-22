@@ -93,11 +93,14 @@ class _HomeScreenState extends State<HomeScreen> {
     final textTheme = Theme.of(context).textTheme;
     _maybeOpenWeeklyReplay(c, home, hasClips);
 
+    final tappable = widget.onOpenProgress != null;
     final counter = Text(
       'Attempt ${home.attemptNumber} · Day ${home.dayNumber}',
-      style: const TextStyle(
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
         fontSize: 14,
-        color: StickColors.muted,
+        color: tappable ? null : StickColors.muted,
         fontWeight: FontWeight.w600,
         fontVariations: [FontVariation('wght', 600)],
       ),
@@ -136,18 +139,49 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Row(
                       children: [
-                        widget.onOpenProgress == null
+                        !tappable
                             ? counter
-                            : InkWell(
-                                onTap: widget.onOpenProgress,
+                            : Flexible(
                                 child: ConstrainedBox(
                                   constraints: const BoxConstraints(
                                     minHeight: 48,
                                   ),
-                                  child: Align(
-                                    alignment: Alignment.centerLeft,
-                                    widthFactor: 1,
-                                    child: counter,
+                                  child: Material(
+                                    type: MaterialType.transparency,
+                                    shape: StadiumBorder(
+                                      side: BorderSide(
+                                        color: StickColors.muted.withValues(
+                                          alpha: 0.5,
+                                        ),
+                                      ),
+                                    ),
+                                    child: InkWell(
+                                      customBorder: const StadiumBorder(),
+                                      onTap: widget.onOpenProgress,
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 14,
+                                          vertical: 8,
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(
+                                              Icons.bar_chart_rounded,
+                                              size: 16,
+                                              color: StickColors.lime,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Flexible(child: counter),
+                                            const Icon(
+                                              Icons.chevron_right,
+                                              size: 18,
+                                              color: StickColors.muted,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -200,6 +234,14 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               const SizedBox(height: 24),
                             ],
+                            Text(
+                              snap.habit.name,
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: textTheme.headlineSmall,
+                            ),
+                            const SizedBox(height: 16),
                             number,
                             if (showRescue) ...[
                               const SizedBox(height: 24),
