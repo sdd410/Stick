@@ -297,6 +297,28 @@ void main() {
     expect(t.takeException(), isNull);
   });
 
+  testWidgets('counter is not truncated at 360dp', (t) async {
+    t.view.physicalSize = const Size(360, 640);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    await pump(
+      t,
+      state(attempt: 2, day: 3),
+      onOpenProgress: () {},
+      onOpenSettings: () {},
+    );
+    // The pill takes all the width the settings icon leaves (360 - 2*24
+    // padding - 48 icon). Flexible + Spacer capped it at about half.
+    final pill = t.getSize(
+      find.ancestor(
+        of: find.text('Attempt 2 · Day 3'),
+        matching: find.byType(InkWell),
+      ),
+    );
+    expect(pill.width, 264);
+    expect(pill.height, greaterThanOrEqualTo(48));
+  });
+
   testWidgets('clip prompt banner shows on 7/14/21 and opens recorder', (
     t,
   ) async {
