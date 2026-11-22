@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'controller/stick_scope.dart';
 import 'theme.dart';
+import 'ui/home/home_screen.dart';
 import 'ui/setup/setup_flow.dart';
 
 class StickApp extends StatelessWidget {
@@ -26,7 +27,6 @@ class _Root extends StatelessWidget {
     final c = StickScope.of(context);
     if (!c.loaded) return const Scaffold();
     if (c.needsSetup) return const SetupFlow();
-    // Task 6 replaces this placeholder with HomeScreen.
-    return Scaffold(body: Center(child: Text('Day ${c.home!.dayNumber}')));
+    return const HomeScreen();
   }
 }
