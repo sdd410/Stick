@@ -105,6 +105,10 @@ class DeviceClipRecorder implements ClipRecorder {
 
   @override
   Future<void> start(ClipType t, String path) async {
+    _ticker?.cancel();
+    _ticker = null;
+    await _ampSub?.cancel();
+    _ampSub = null;
     _type = t;
     _path = path;
     if (t == ClipType.voice) {

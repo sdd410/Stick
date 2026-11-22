@@ -182,7 +182,7 @@ class StickController extends ChangeNotifier {
   Future<void> addClip(ClipType type, String path, int durationMs) =>
       _run(() async {
         final h = _home;
-        if (h == null) return;
+        if (h == null) throw StateError('No habit to attach the clip to');
         await _repo.addClip(type, path, h.dayNumber, durationMs, _clock());
         await _refresh();
       });

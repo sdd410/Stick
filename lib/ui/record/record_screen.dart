@@ -38,6 +38,8 @@ class _RecordScreenState extends State<RecordScreen>
   String? _path;
   String? _notice;
   bool _stopping = false;
+  bool _starting = false;
+  bool _saving = false;
   StreamSubscription<Duration>? _sub;
 
   ClipRecorder get _rec => widget.recorder;
@@ -80,6 +82,9 @@ class _RecordScreenState extends State<RecordScreen>
             state == AppLifecycleState.inactive) &&
         _phase == _Phase.recording) {
       _stop();
+    } else if (state == AppLifecycleState.resumed && _phase == _Phase.blocked) {
+      // The user may have granted it in system settings.
+      _choose(_type);
     }
   }
 
@@ -114,6 +119,16 @@ class _RecordScreenState extends State<RecordScreen>
   }
 
   Future<void> _start() async {
+    if (_starting || _phase != _Phase.ready) return;
+    _starting = true;
+    try {
+      await _startRecording();
+    } finally {
+      _starting = false;
+    }
+  }
+
+  Future<void> _startRecording() async {
     final path = widget.files.newPath(_type, DateTime.now());
     _path = path;
     try {
@@ -176,6 +191,7 @@ class _RecordScreenState extends State<RecordScreen>
   }
 
   Future<void> _redo() async {
+    if (_saving) return;
     final clip = _clip;
     _clip = null;
     if (clip != null) await widget.files.delete(clip.path);
@@ -188,7 +204,8 @@ class _RecordScreenState extends State<RecordScreen>
 
   Future<void> _keep() async {
     final clip = _clip;
-    if (clip == null) return;
+    if (clip == null || _saving) return;
+    setState(() => _saving = true);
     final controller = StickScope.of(context);
     final nav = Navigator.of(context);
     try {
@@ -196,7 +213,10 @@ class _RecordScreenState extends State<RecordScreen>
     } catch (e) {
       debugPrint('addClip failed: $e');
       if (!mounted) return;
-      setState(() => _notice = "Couldn't save that. Try again.");
+      setState(() {
+        _saving = false;
+        _notice = "Couldn't save that. Try again.";
+      });
       return;
     }
     _clip = null; // kept: do not delete on leaving
@@ -263,7 +283,13 @@ class _RecordScreenState extends State<RecordScreen>
             ),
             const SizedBox(height: 24),
             FilledButton(
-              onPressed: () => widget.openSettings(),
+              onPressed: () async {
+                try {
+                  await widget.openSettings();
+                } catch (e) {
+                  debugPrint('openSettings failed: $e');
+                }
+              },
               style: _bigButton,
               child: const Text('Open settings'),
             ),
@@ -294,13 +320,13 @@ class _RecordScreenState extends State<RecordScreen>
             ],
             const SizedBox(height: 32),
             FilledButton(
-              onPressed: _keep,
+              onPressed: _saving ? null : _keep,
               style: _bigButton,
               child: const Text('Keep'),
             ),
             const SizedBox(height: 12),
             OutlinedButton(
-              onPressed: _redo,
+              onPressed: _saving ? null : _redo,
               style: _bigButton,
               child: const Text('Redo'),
             ),

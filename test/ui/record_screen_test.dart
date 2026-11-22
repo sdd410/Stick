@@ -20,6 +20,7 @@ class FakeRecorder implements ClipRecorder {
   RecordedClip? result;
   int durationMs = 5000;
   int stops = 0;
+  int starts = 0;
   int releases = 0;
   String? startedPath;
   final _elapsed = StreamController<Duration>.broadcast();
@@ -33,6 +34,8 @@ class FakeRecorder implements ClipRecorder {
   Future<void> prepare(ClipType t) async {}
   @override
   Future<void> start(ClipType t, String path) async {
+    starts++;
+    await Future<void>.delayed(Duration.zero);
     startedPath = path;
     File(path).writeAsBytesSync([1, 2, 3]);
     result = RecordedClip(path: path, durationMs: durationMs);
@@ -144,6 +147,7 @@ void main() {
   Future<void> tapRecord(WidgetTester t) async {
     await t.tap(find.byKey(const Key('record-button')));
     await t.pump();
+    await t.pump(const Duration(milliseconds: 1));
     await t.pump();
   }
 
@@ -281,5 +285,29 @@ void main() {
     );
     expect(clipFilesOnDisk(), isEmpty);
     expect(c.snapshot!.clips, isEmpty);
+  });
+
+  testWidgets('double tap on record starts only one recording', (t) async {
+    await pump(t);
+    await choose(t, 'Voice');
+    await t.tap(find.byKey(const Key('record-button')));
+    await t.tap(find.byKey(const Key('record-button')));
+    await t.pump(const Duration(milliseconds: 1));
+    await t.pump();
+    expect(rec.starts, 1);
+  });
+
+  testWidgets('double tap on Keep saves one clip', (t) async {
+    await pump(t);
+    await choose(t, 'Voice');
+    await tapRecord(t);
+    await t.tap(find.byKey(const Key('record-button')));
+    await t.pump();
+    await t.pump();
+    await t.tap(find.text('Keep'));
+    await t.tap(find.text('Keep'), warnIfMissed: false);
+    await settle(t);
+    await t.pumpAndSettle();
+    expect(c.snapshot!.clips, hasLength(1));
   });
 }

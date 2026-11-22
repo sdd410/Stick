@@ -10,6 +10,7 @@ import 'package:stick/controller/stick_controller.dart';
 import 'package:stick/controller/stick_scope.dart';
 import 'package:stick/data/database.dart' as db_;
 import 'package:stick/data/repository.dart';
+import 'package:stick/domain/models.dart';
 import 'package:stick/services/clip_files.dart';
 import 'package:stick/services/clip_recorder.dart';
 
@@ -120,7 +121,7 @@ void main() {
     final c = await pump(
       t,
       FakeSink(true),
-      recorder: DeviceClipRecorder(),
+      recorder: _NoopRecorder(),
       files: ClipFiles(tmp),
     );
     await t.enterText(find.byType(TextField), 'Walk');
@@ -144,4 +145,24 @@ void main() {
     await t.pump();
     expect(find.text('Day 1'), findsOneWidget);
   });
+}
+
+class _NoopRecorder implements ClipRecorder {
+  @override
+  Future<PermissionResult> ensurePermission(ClipType t) async =>
+      PermissionResult.granted;
+  @override
+  Future<void> prepare(ClipType t) async {}
+  @override
+  Future<void> start(ClipType t, String path) async {}
+  @override
+  Future<RecordedClip?> stop() async => null;
+  @override
+  Stream<Duration> get elapsed => const Stream.empty();
+  @override
+  Stream<double> get level => const Stream.empty();
+  @override
+  Widget buildPreview(BuildContext context) => const SizedBox.shrink();
+  @override
+  Future<void> release() async {}
 }
