@@ -10,6 +10,7 @@ import 'ui/replay/clip_list_screen.dart';
 import 'ui/replay/clip_player.dart';
 import 'ui/replay/replay_screen.dart';
 import 'ui/home/home_screen.dart';
+import 'ui/progress/progress_screen.dart';
 import 'ui/record/record_screen.dart';
 import 'ui/setup/setup_flow.dart';
 
@@ -102,6 +103,19 @@ class _RootState extends State<_Root> {
     );
   }
 
+  void _openProgress() {
+    final files = widget.files;
+    Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (ctx) => ProgressScreen(
+          onOpenReplay: files == null
+              ? null
+              : () => openReplay(ctx, files: files),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = StickScope.of(context);
@@ -114,6 +128,7 @@ class _RootState extends State<_Root> {
       );
     }
     return HomeScreen(
+      onOpenProgress: _openProgress,
       onAddMessage: _canRecord ? _openRecord : null,
       onPlayReplay: widget.files == null
           ? null
