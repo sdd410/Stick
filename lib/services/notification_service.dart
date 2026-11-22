@@ -36,7 +36,7 @@ class NotificationService implements ReminderSink {
     }
     await _plugin.initialize(
       settings: const InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        android: AndroidInitializationSettings('ic_stat_stick'),
       ),
       onDidReceiveNotificationResponse: (r) => onTap(r.payload),
     );

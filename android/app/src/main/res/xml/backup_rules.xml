@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 and older. path_provider's documents directory is files/app_flutter,
+     which holds stick.sqlite (kept) and clips/ (skipped: large, and Stick drops
+     rows whose file is missing on the next open). -->
+<full-backup-content>
+    <exclude domain="file" path="app_flutter/clips/" />
+</full-backup-content>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12 and newer. Cloud backup keeps the database and shared prefs but
+     skips files/app_flutter/clips/. A phone-to-phone transfer copies everything. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="app_flutter/clips/" />
+    </cloud-backup>
+</data-extraction-rules>
