@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../controller/stick_scope.dart';
@@ -19,7 +21,8 @@ class ProgressScreen extends StatelessWidget {
     if (snap == null || home == null) return const Scaffold();
     final p = computeProgress(snap, home);
     final textTheme = Theme.of(context).textTheme;
-    final maxLen = p.bars.fold<int>(1, (m, b) => b.length > m ? b.length : m);
+    final maxDays = p.bars.fold<int>(14, (m, b) => math.max(m, b.daysDone));
+    final anyStar = p.bars.any((b) => b.beatQuitDay);
 
     Widget stat(String label, int value) => Row(
       children: [
@@ -32,7 +35,13 @@ class ProgressScreen extends StatelessWidget {
     );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Progress')),
+      appBar: AppBar(
+        title: Text(
+          snap.habit.name,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
@@ -51,51 +60,66 @@ class ProgressScreen extends StatelessWidget {
               style: textTheme.titleMedium,
             ),
             const SizedBox(height: 32),
+            Text('Your attempts', style: textTheme.titleMedium),
+            const SizedBox(height: 8),
             for (final b in p.bars)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(
-                      width: 96,
-                      child: Text(
-                        'Day ${b.length}${b.beatQuitDay ? ' ★' : ''}',
-                        style: textTheme.bodyMedium,
-                      ),
-                    ),
-                    Expanded(
-                      child: LayoutBuilder(
-                        builder: (_, box) => Align(
-                          alignment: Alignment.centerLeft,
-                          child: Container(
-                            height: 16,
-                            width: box.maxWidth * b.length / maxLen,
-                            decoration: BoxDecoration(
-                              color: b.isCurrent
-                                  ? StickColors.lime
-                                  : StickColors.muted,
-                              borderRadius: BorderRadius.circular(8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            b.isCurrent
+                                ? 'Attempt ${b.number} · now'
+                                : 'Attempt ${b.number}',
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: b.isCurrent ? StickColors.lime : null,
                             ),
                           ),
                         ),
-                      ),
+                        Text(
+                          b.daysDone == 1 ? '1 day' : '${b.daysDone} days',
+                          style: textTheme.bodyMedium,
+                        ),
+                        if (b.beatQuitDay)
+                          Text(
+                            ' ★',
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: StickColors.lime,
+                            ),
+                          ),
+                      ],
                     ),
-                    SizedBox(
-                      width: 44,
-                      child: Text(
-                        b.isCurrent ? 'now' : '',
-                        textAlign: TextAlign.end,
-                        style: textTheme.bodySmall?.copyWith(
-                          color: StickColors.lime,
+                    const SizedBox(height: 4),
+                    LayoutBuilder(
+                      builder: (_, box) => Container(
+                        height: 16,
+                        width: box.maxWidth * b.daysDone / maxDays,
+                        decoration: BoxDecoration(
+                          color: b.isCurrent
+                              ? StickColors.lime
+                              : StickColors.muted,
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
+            if (anyStar)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  '★ = got past your quit day (Day ${p.nextQuitTarget})',
+                  style: textTheme.bodySmall?.copyWith(
+                    color: StickColors.muted,
+                  ),
+                ),
+              ),
             const SizedBox(height: 24),
-            stat('Beat your quit day', p.quitDaysBeaten),
-            const SizedBox(height: 12),
             stat('Tiny days', p.tinyDays),
             Text(
               'They count.',
@@ -132,7 +156,11 @@ class ProgressScreen extends StatelessWidget {
               style: FilledButton.styleFrom(
                 minimumSize: const Size.fromHeight(60),
               ),
-              child: Text('Get past Day ${p.nextQuitTarget} this time'),
+              child: Text(
+                home.dayNumber > p.nextQuitTarget
+                    ? 'Back to Day ${home.dayNumber}'
+                    : 'Get past Day ${p.nextQuitTarget} this time',
+              ),
             ),
           ],
         ),

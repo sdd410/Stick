@@ -102,7 +102,6 @@ void main() {
     expect(p.bars[0].beatQuitDay, isTrue);
     expect(p.bars[1].length, 3);
     expect(p.bars[1].beatQuitDay, isFalse);
-    expect(p.quitDaysBeaten, 1);
   });
 
   test('length equal to target is not a star', () {
@@ -115,7 +114,6 @@ void main() {
       home(2, 3, 6),
     );
     expect(p.bars[0].beatQuitDay, isFalse);
-    expect(p.quitDaysBeaten, 0);
   });
 
   test('current bar marked now and can earn a star', () {
@@ -126,7 +124,6 @@ void main() {
     expect(p.bars[0].isCurrent, isFalse);
     expect(p.bars[1].isCurrent, isTrue);
     expect(p.bars[1].beatQuitDay, isTrue);
-    expect(p.quitDaysBeaten, 2);
     expect(p.nextQuitTarget, 6);
   });
 
@@ -169,5 +166,30 @@ void main() {
       home(2, 1, 6),
     );
     expect(p.bars.first.length, 4);
+  });
+
+  test('daysDone counts check-ins per attempt', () {
+    final p = computeProgress(
+      snap(
+        ended: [a1.copyWith(finalDay: 5)],
+        current: a2,
+        checkIns: [
+          for (var i = 1; i <= 4; i++) ci('2026-11-0$i', 1),
+          ci('2026-11-10', 2),
+          ci('2026-11-11', 2),
+        ],
+      ),
+      home(2, 3, 6),
+    );
+    expect(p.bars[0].daysDone, 4);
+    expect(p.bars[1].daysDone, 2);
+  });
+
+  test('current attempt with no check-ins has daysDone 0', () {
+    final p = computeProgress(
+      snap(ended: [a1], current: a2, checkIns: checkIns.sublist(0, 5)),
+      home(2, 1, 6),
+    );
+    expect(p.bars.last.daysDone, 0);
   });
 }
