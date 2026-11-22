@@ -40,6 +40,7 @@ void main() {
     recordedAt: DateTime(2026, 11, 2),
     dayNumber: 1,
     durationMs: 5000,
+    attempt: 1,
   );
 
   Future<void> pump(
@@ -55,11 +56,7 @@ void main() {
       finalDay: 5,
       endedDay: '2026-11-10',
     );
-    final current = Attempt(
-      number: 2,
-      startDay: '2026-11-10',
-      quitTarget: 6,
-    );
+    final current = Attempt(number: 2, startDay: '2026-11-10', quitTarget: 6);
     final snap = Snapshot(
       habit: Habit(
         name: 'Walk',

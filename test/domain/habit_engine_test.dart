@@ -43,6 +43,7 @@ Clip clip(int dayNumber) => Clip(
   recordedAt: DateTime(2026, 11, 1),
   dayNumber: dayNumber,
   durationMs: 5000,
+  attempt: 1,
 );
 
 const noFlags = Flags(
@@ -235,6 +236,21 @@ void main() {
       compute(
         a: attempt(startDay: d(-5)),
         checkIns: fiveC,
+      ).clipPrompt,
+      false,
+    );
+  });
+
+  test('clip prompt ignores clips from an earlier attempt', () {
+    final a = attempt(startDay: d(-6)).copyWith(number: 2);
+    final six = checks([-6, -5, -4, -3, -2, -1]);
+    // clip(7) belongs to attempt 1: attempt 2 still gets its own prompt.
+    expect(compute(a: a, checkIns: six, clips: [clip(7)]).clipPrompt, true);
+    expect(
+      compute(
+        a: a,
+        checkIns: six,
+        clips: [clip(7).copyWith(attempt: 2)],
       ).clipPrompt,
       false,
     );

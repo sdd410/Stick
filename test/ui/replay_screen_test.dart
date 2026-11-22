@@ -61,6 +61,7 @@ Clip mk(int id) => Clip(
   recordedAt: DateTime(2026, 11, id),
   dayNumber: id,
   durationMs: 5000,
+  attempt: 1,
 );
 
 class WeeklyController extends StickController {

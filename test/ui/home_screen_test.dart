@@ -91,6 +91,7 @@ final clip = Clip(
   recordedAt: DateTime(2026, 11, 2),
   dayNumber: 1,
   durationMs: 5000,
+  attempt: 1,
 );
 
 void main() {

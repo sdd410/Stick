@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:drift/drift.dart' show driftRuntimeOptions;
+import 'package:drift/drift.dart' show Migrator, driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stick/data/database.dart' as db_;
@@ -102,7 +102,14 @@ void main() {
     );
     await repo.setFlags(f);
     final at = DateTime(2026, 11, 21, 8);
-    final c = await repo.addClip(ClipType.video, '/x/a.mp4', 2, 4000, at);
+    final c = await repo.addClip(
+      ClipType.video,
+      '/x/a.mp4',
+      2,
+      4000,
+      at,
+      attempt: 1,
+    );
     var s = (await repo.load())!;
     expect(s.flags, f);
     expect(s.clips, [c]);
@@ -121,7 +128,14 @@ void main() {
         homeStyle: HomeStyle.road,
       ),
     );
-    await repo.addClip(ClipType.voice, '/x/a.m4a', 1, 1000, DateTime(2026));
+    await repo.addClip(
+      ClipType.voice,
+      '/x/a.m4a',
+      1,
+      1000,
+      DateTime(2026),
+      attempt: 1,
+    );
     final paths = await repo.freshStart(keepClips: false);
     expect(paths, ['/x/a.m4a']);
     expect(await repo.load(), isNull);
@@ -133,7 +147,14 @@ void main() {
 
   test('freshStart keepClips true keeps clip rows', () async {
     await repo.createHabit(_habit, '2026-11-20');
-    await repo.addClip(ClipType.voice, '/x/a.m4a', 1, 1000, DateTime(2026));
+    await repo.addClip(
+      ClipType.voice,
+      '/x/a.m4a',
+      1,
+      1000,
+      DateTime(2026),
+      attempt: 1,
+    );
     final paths = await repo.freshStart(keepClips: true);
     expect(paths, isEmpty);
     expect(await repo.load(), isNull);
@@ -160,6 +181,7 @@ void main() {
       1,
       1000,
       DateTime(2026, 11, 20),
+      attempt: 1,
     );
     final before = await r1.load();
     await db1.close();
@@ -169,5 +191,68 @@ void main() {
     final after = await StickRepository(db2).load();
     expect(after, isNotNull);
     expect(after, before);
+  });
+
+  test('enums are stored by name', () async {
+    await repo.createHabit(_habit, '2026-11-20');
+    await repo.setFlags(
+      const Flags(
+        day4Celebrated: false,
+        lastWeeklyReplayDayNumber: null,
+        homeStyle: HomeStyle.road,
+      ),
+    );
+    await repo.addClip(
+      ClipType.video,
+      'clips/1.mp4',
+      1,
+      1000,
+      DateTime(2026),
+      attempt: 1,
+    );
+    final style = await db
+        .customSelect('SELECT home_style AS v FROM flags')
+        .get();
+    final type = await db.customSelect('SELECT type AS v FROM clips').get();
+    expect(style.single.read<String>('v'), 'road');
+    expect(type.single.read<String>('v'), 'video');
+  });
+
+  test('upgrading from an unknown schema version fails loudly', () async {
+    final strategy = db.migration;
+    expect(
+      () => strategy.onUpgrade(Migrator(db), 1, 2),
+      throwsA(isA<UnsupportedError>()),
+    );
+  });
+
+  test('resetAttempt clears the weekly replay marker', () async {
+    await repo.createHabit(_habit, '2026-11-20');
+    await repo.setFlags(
+      const Flags(
+        day4Celebrated: true,
+        lastWeeklyReplayDayNumber: 7,
+        homeStyle: HomeStyle.road,
+      ),
+    );
+    await repo.resetAttempt('2026-11-25');
+    final f = (await repo.load())!.flags;
+    expect(f.lastWeeklyReplayDayNumber, isNull);
+    expect(f.day4Celebrated, isTrue);
+    expect(f.homeStyle, HomeStyle.road);
+  });
+
+  test('freshStart keepClips detaches the kept clips from attempts', () async {
+    await repo.createHabit(_habit, '2026-11-20');
+    await repo.addClip(
+      ClipType.voice,
+      'clips/1.m4a',
+      1,
+      1000,
+      DateTime(2026),
+      attempt: 1,
+    );
+    await repo.freshStart(keepClips: true);
+    expect((await repo.allClips()).single.attempt, 0);
   });
 }

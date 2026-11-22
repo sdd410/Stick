@@ -57,7 +57,9 @@ HomeState computeHomeState({
         flags.lastWeeklyReplayDayNumber != dayNumber,
     clipPrompt:
         (dayNumber == 7 || dayNumber == 14 || dayNumber == 21) &&
-        !clips.any((c) => c.dayNumber == dayNumber),
+        !clips.any(
+          (c) => c.attempt == attempt.number && c.dayNumber == dayNumber,
+        ),
     firstMissToRecord: paused && attempt.firstMissDay == null
         ? dayNumber
         : null,

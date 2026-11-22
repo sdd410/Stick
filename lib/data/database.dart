@@ -5,6 +5,8 @@ import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import '../domain/models.dart' show ClipType, HomeStyle;
+
 part 'database.g.dart';
 
 /// Single row (id is always 1).
@@ -47,8 +49,15 @@ class CheckIns extends Table {
 
 class Clips extends Table {
   IntColumn get id => integer().autoIncrement()();
-  IntColumn get type => integer()(); // ClipType.index
+  // Stored by name, so reordering the enum can never relabel old rows.
+  TextColumn get type => textEnum<ClipType>()();
+
+  /// Relative to the clip root (`clips/<millis>.m4a`), so a moved app
+  /// directory does not break rows.
   TextColumn get path => text()();
+
+  /// The attempt this clip was recorded in (0 = kept across a fresh start).
+  IntColumn get attempt => integer()();
   DateTimeColumn get recordedAt => dateTime()();
   IntColumn get dayNumber => integer()();
   IntColumn get durationMs => integer()();
@@ -60,7 +69,8 @@ class Flags extends Table {
   BoolColumn get day4Celebrated =>
       boolean().withDefault(const Constant(false))();
   IntColumn get lastWeeklyReplayDayNumber => integer().nullable()();
-  IntColumn get homeStyle => integer().withDefault(const Constant(0))();
+  TextColumn get homeStyle =>
+      textEnum<HomeStyle>().withDefault(const Constant('bigNumber'))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -74,6 +84,25 @@ class StickDatabase extends _$StickDatabase {
 
   @override
   int get schemaVersion => 1;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) => m.createAll(),
+    // Schema 1 is the first shipped version, so nothing can upgrade yet.
+    // When schemaVersion grows, add one explicit step per version here (and
+    // dump the new schema to drift_schemas/). Failing loudly beats drift's
+    // silent default for a version nobody wrote a step for.
+    onUpgrade: (m, from, to) async {
+      for (var v = from; v < to; v++) {
+        switch (v) {
+          default:
+            throw UnsupportedError(
+              'No migration from schema version $v to ${v + 1}',
+            );
+        }
+      }
+    },
+  );
 }
 
 QueryExecutor _openProduction() {

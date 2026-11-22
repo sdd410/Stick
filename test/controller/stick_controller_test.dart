@@ -196,6 +196,67 @@ void main() {
       expect(clip.recordedAt, now);
     });
 
+    test('clip rows store paths relative to the clip root', () async {
+      await setup();
+      final path = files.newPath(ClipType.voice, now);
+      File(path).writeAsBytesSync([1]);
+      await c.addClip(ClipType.voice, path, 4000);
+      final stored = (await repo.allClips()).single;
+      expect(stored.path, 'clips/${now.millisecondsSinceEpoch}.m4a');
+      expect(stored.attempt, 1);
+      // The app still sees the absolute path.
+      expect(c.snapshot!.clips.single.path, path);
+    });
+
+    test('open drops clip rows whose file is missing', () async {
+      await setup();
+      final keep = files.newPath(ClipType.voice, now);
+      final gone = files.newPath(
+        ClipType.voice,
+        now.add(const Duration(seconds: 1)),
+      );
+      File(keep).writeAsBytesSync([1]);
+      File(gone).writeAsBytesSync([1]);
+      await c.addClip(ClipType.voice, keep, 4000);
+      await c.addClip(ClipType.voice, gone, 4000);
+      File(gone).deleteSync();
+      await c.open();
+      expect(c.snapshot!.clips.map((x) => x.path), [keep]);
+      expect(await repo.allClips(), hasLength(1));
+    });
+
+    test('first open deletes clip files that have no row', () async {
+      await setup();
+      final tracked = files.newPath(ClipType.voice, now);
+      final orphan = files.newPath(
+        ClipType.voice,
+        now.add(const Duration(seconds: 1)),
+      );
+      File(tracked).writeAsBytesSync([1]);
+      File(orphan).writeAsBytesSync([1]);
+      await c.addClip(ClipType.voice, tracked, 4000);
+      // A fresh controller is a cold start.
+      final cold = StickController(
+        repo: repo,
+        clock: () => now,
+        reminders: sink,
+        clipFiles: files,
+      );
+      await cold.open();
+      expect(File(orphan).existsSync(), isFalse);
+      expect(File(tracked).existsSync(), isTrue);
+      expect(cold.snapshot!.clips, hasLength(1));
+    });
+
+    test('later opens leave unsaved recordings alone', () async {
+      await setup();
+      await c.open(); // first open
+      final pending = files.newPath(ClipType.voice, now);
+      File(pending).writeAsBytesSync([1]); // still in the record screen
+      await c.open(); // app resumed
+      expect(File(pending).existsSync(), isTrue);
+    });
+
     test('deleteClip removes the row and the file', () async {
       await setup();
       final f = makeFile('a.m4a');

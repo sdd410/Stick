@@ -1176,15 +1176,15 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, Clip> {
       'PRIMARY KEY AUTOINCREMENT',
     ),
   );
-  static const VerificationMeta _typeMeta = const VerificationMeta('type');
   @override
-  late final GeneratedColumn<int> type = GeneratedColumn<int>(
-    'type',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
+  late final GeneratedColumnWithTypeConverter<ClipType, String> type =
+      GeneratedColumn<String>(
+        'type',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<ClipType>($ClipsTable.$convertertype);
   static const VerificationMeta _pathMeta = const VerificationMeta('path');
   @override
   late final GeneratedColumn<String> path = GeneratedColumn<String>(
@@ -1192,6 +1192,17 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, Clip> {
     aliasedName,
     false,
     type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _attemptMeta = const VerificationMeta(
+    'attempt',
+  );
+  @override
+  late final GeneratedColumn<int> attempt = GeneratedColumn<int>(
+    'attempt',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
   static const VerificationMeta _recordedAtMeta = const VerificationMeta(
@@ -1232,6 +1243,7 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, Clip> {
     id,
     type,
     path,
+    attempt,
     recordedAt,
     dayNumber,
     durationMs,
@@ -1251,14 +1263,6 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, Clip> {
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
-    if (data.containsKey('type')) {
-      context.handle(
-        _typeMeta,
-        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_typeMeta);
-    }
     if (data.containsKey('path')) {
       context.handle(
         _pathMeta,
@@ -1266,6 +1270,14 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, Clip> {
       );
     } else if (isInserting) {
       context.missing(_pathMeta);
+    }
+    if (data.containsKey('attempt')) {
+      context.handle(
+        _attemptMeta,
+        attempt.isAcceptableOrUnknown(data['attempt']!, _attemptMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_attemptMeta);
     }
     if (data.containsKey('recorded_at')) {
       context.handle(
@@ -1304,13 +1316,19 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, Clip> {
         DriftSqlType.int,
         data['${effectivePrefix}id'],
       )!,
-      type: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}type'],
-      )!,
+      type: $ClipsTable.$convertertype.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}type'],
+        )!,
+      ),
       path: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}path'],
+      )!,
+      attempt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}attempt'],
       )!,
       recordedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
@@ -1331,12 +1349,21 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, Clip> {
   $ClipsTable createAlias(String alias) {
     return $ClipsTable(attachedDatabase, alias);
   }
+
+  static JsonTypeConverter2<ClipType, String, String> $convertertype =
+      const EnumNameConverter<ClipType>(ClipType.values);
 }
 
 class Clip extends DataClass implements Insertable<Clip> {
   final int id;
-  final int type;
+  final ClipType type;
+
+  /// Relative to the clip root (`clips/<millis>.m4a`), so a moved app
+  /// directory does not break rows.
   final String path;
+
+  /// The attempt this clip was recorded in (0 = kept across a fresh start).
+  final int attempt;
   final DateTime recordedAt;
   final int dayNumber;
   final int durationMs;
@@ -1344,6 +1371,7 @@ class Clip extends DataClass implements Insertable<Clip> {
     required this.id,
     required this.type,
     required this.path,
+    required this.attempt,
     required this.recordedAt,
     required this.dayNumber,
     required this.durationMs,
@@ -1352,8 +1380,11 @@ class Clip extends DataClass implements Insertable<Clip> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
-    map['type'] = Variable<int>(type);
+    {
+      map['type'] = Variable<String>($ClipsTable.$convertertype.toSql(type));
+    }
     map['path'] = Variable<String>(path);
+    map['attempt'] = Variable<int>(attempt);
     map['recorded_at'] = Variable<DateTime>(recordedAt);
     map['day_number'] = Variable<int>(dayNumber);
     map['duration_ms'] = Variable<int>(durationMs);
@@ -1365,6 +1396,7 @@ class Clip extends DataClass implements Insertable<Clip> {
       id: Value(id),
       type: Value(type),
       path: Value(path),
+      attempt: Value(attempt),
       recordedAt: Value(recordedAt),
       dayNumber: Value(dayNumber),
       durationMs: Value(durationMs),
@@ -1378,8 +1410,11 @@ class Clip extends DataClass implements Insertable<Clip> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Clip(
       id: serializer.fromJson<int>(json['id']),
-      type: serializer.fromJson<int>(json['type']),
+      type: $ClipsTable.$convertertype.fromJson(
+        serializer.fromJson<String>(json['type']),
+      ),
       path: serializer.fromJson<String>(json['path']),
+      attempt: serializer.fromJson<int>(json['attempt']),
       recordedAt: serializer.fromJson<DateTime>(json['recordedAt']),
       dayNumber: serializer.fromJson<int>(json['dayNumber']),
       durationMs: serializer.fromJson<int>(json['durationMs']),
@@ -1390,8 +1425,11 @@ class Clip extends DataClass implements Insertable<Clip> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
-      'type': serializer.toJson<int>(type),
+      'type': serializer.toJson<String>(
+        $ClipsTable.$convertertype.toJson(type),
+      ),
       'path': serializer.toJson<String>(path),
+      'attempt': serializer.toJson<int>(attempt),
       'recordedAt': serializer.toJson<DateTime>(recordedAt),
       'dayNumber': serializer.toJson<int>(dayNumber),
       'durationMs': serializer.toJson<int>(durationMs),
@@ -1400,8 +1438,9 @@ class Clip extends DataClass implements Insertable<Clip> {
 
   Clip copyWith({
     int? id,
-    int? type,
+    ClipType? type,
     String? path,
+    int? attempt,
     DateTime? recordedAt,
     int? dayNumber,
     int? durationMs,
@@ -1409,6 +1448,7 @@ class Clip extends DataClass implements Insertable<Clip> {
     id: id ?? this.id,
     type: type ?? this.type,
     path: path ?? this.path,
+    attempt: attempt ?? this.attempt,
     recordedAt: recordedAt ?? this.recordedAt,
     dayNumber: dayNumber ?? this.dayNumber,
     durationMs: durationMs ?? this.durationMs,
@@ -1418,6 +1458,7 @@ class Clip extends DataClass implements Insertable<Clip> {
       id: data.id.present ? data.id.value : this.id,
       type: data.type.present ? data.type.value : this.type,
       path: data.path.present ? data.path.value : this.path,
+      attempt: data.attempt.present ? data.attempt.value : this.attempt,
       recordedAt: data.recordedAt.present
           ? data.recordedAt.value
           : this.recordedAt,
@@ -1434,6 +1475,7 @@ class Clip extends DataClass implements Insertable<Clip> {
           ..write('id: $id, ')
           ..write('type: $type, ')
           ..write('path: $path, ')
+          ..write('attempt: $attempt, ')
           ..write('recordedAt: $recordedAt, ')
           ..write('dayNumber: $dayNumber, ')
           ..write('durationMs: $durationMs')
@@ -1443,7 +1485,7 @@ class Clip extends DataClass implements Insertable<Clip> {
 
   @override
   int get hashCode =>
-      Object.hash(id, type, path, recordedAt, dayNumber, durationMs);
+      Object.hash(id, type, path, attempt, recordedAt, dayNumber, durationMs);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1451,6 +1493,7 @@ class Clip extends DataClass implements Insertable<Clip> {
           other.id == this.id &&
           other.type == this.type &&
           other.path == this.path &&
+          other.attempt == this.attempt &&
           other.recordedAt == this.recordedAt &&
           other.dayNumber == this.dayNumber &&
           other.durationMs == this.durationMs);
@@ -1458,8 +1501,9 @@ class Clip extends DataClass implements Insertable<Clip> {
 
 class ClipsCompanion extends UpdateCompanion<Clip> {
   final Value<int> id;
-  final Value<int> type;
+  final Value<ClipType> type;
   final Value<String> path;
+  final Value<int> attempt;
   final Value<DateTime> recordedAt;
   final Value<int> dayNumber;
   final Value<int> durationMs;
@@ -1467,26 +1511,30 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
     this.id = const Value.absent(),
     this.type = const Value.absent(),
     this.path = const Value.absent(),
+    this.attempt = const Value.absent(),
     this.recordedAt = const Value.absent(),
     this.dayNumber = const Value.absent(),
     this.durationMs = const Value.absent(),
   });
   ClipsCompanion.insert({
     this.id = const Value.absent(),
-    required int type,
+    required ClipType type,
     required String path,
+    required int attempt,
     required DateTime recordedAt,
     required int dayNumber,
     required int durationMs,
   }) : type = Value(type),
        path = Value(path),
+       attempt = Value(attempt),
        recordedAt = Value(recordedAt),
        dayNumber = Value(dayNumber),
        durationMs = Value(durationMs);
   static Insertable<Clip> custom({
     Expression<int>? id,
-    Expression<int>? type,
+    Expression<String>? type,
     Expression<String>? path,
+    Expression<int>? attempt,
     Expression<DateTime>? recordedAt,
     Expression<int>? dayNumber,
     Expression<int>? durationMs,
@@ -1495,6 +1543,7 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
       if (id != null) 'id': id,
       if (type != null) 'type': type,
       if (path != null) 'path': path,
+      if (attempt != null) 'attempt': attempt,
       if (recordedAt != null) 'recorded_at': recordedAt,
       if (dayNumber != null) 'day_number': dayNumber,
       if (durationMs != null) 'duration_ms': durationMs,
@@ -1503,8 +1552,9 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
 
   ClipsCompanion copyWith({
     Value<int>? id,
-    Value<int>? type,
+    Value<ClipType>? type,
     Value<String>? path,
+    Value<int>? attempt,
     Value<DateTime>? recordedAt,
     Value<int>? dayNumber,
     Value<int>? durationMs,
@@ -1513,6 +1563,7 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
       id: id ?? this.id,
       type: type ?? this.type,
       path: path ?? this.path,
+      attempt: attempt ?? this.attempt,
       recordedAt: recordedAt ?? this.recordedAt,
       dayNumber: dayNumber ?? this.dayNumber,
       durationMs: durationMs ?? this.durationMs,
@@ -1526,10 +1577,15 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
       map['id'] = Variable<int>(id.value);
     }
     if (type.present) {
-      map['type'] = Variable<int>(type.value);
+      map['type'] = Variable<String>(
+        $ClipsTable.$convertertype.toSql(type.value),
+      );
     }
     if (path.present) {
       map['path'] = Variable<String>(path.value);
+    }
+    if (attempt.present) {
+      map['attempt'] = Variable<int>(attempt.value);
     }
     if (recordedAt.present) {
       map['recorded_at'] = Variable<DateTime>(recordedAt.value);
@@ -1549,6 +1605,7 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
           ..write('id: $id, ')
           ..write('type: $type, ')
           ..write('path: $path, ')
+          ..write('attempt: $attempt, ')
           ..write('recordedAt: $recordedAt, ')
           ..write('dayNumber: $dayNumber, ')
           ..write('durationMs: $durationMs')
@@ -1597,18 +1654,16 @@ class $FlagsTable extends Flags with TableInfo<$FlagsTable, Flag> {
         type: DriftSqlType.int,
         requiredDuringInsert: false,
       );
-  static const VerificationMeta _homeStyleMeta = const VerificationMeta(
-    'homeStyle',
-  );
   @override
-  late final GeneratedColumn<int> homeStyle = GeneratedColumn<int>(
-    'home_style',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(0),
-  );
+  late final GeneratedColumnWithTypeConverter<HomeStyle, String> homeStyle =
+      GeneratedColumn<String>(
+        'home_style',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('bigNumber'),
+      ).withConverter<HomeStyle>($FlagsTable.$converterhomeStyle);
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1649,12 +1704,6 @@ class $FlagsTable extends Flags with TableInfo<$FlagsTable, Flag> {
         ),
       );
     }
-    if (data.containsKey('home_style')) {
-      context.handle(
-        _homeStyleMeta,
-        homeStyle.isAcceptableOrUnknown(data['home_style']!, _homeStyleMeta),
-      );
-    }
     return context;
   }
 
@@ -1676,10 +1725,12 @@ class $FlagsTable extends Flags with TableInfo<$FlagsTable, Flag> {
         DriftSqlType.int,
         data['${effectivePrefix}last_weekly_replay_day_number'],
       ),
-      homeStyle: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}home_style'],
-      )!,
+      homeStyle: $FlagsTable.$converterhomeStyle.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}home_style'],
+        )!,
+      ),
     );
   }
 
@@ -1687,13 +1738,16 @@ class $FlagsTable extends Flags with TableInfo<$FlagsTable, Flag> {
   $FlagsTable createAlias(String alias) {
     return $FlagsTable(attachedDatabase, alias);
   }
+
+  static JsonTypeConverter2<HomeStyle, String, String> $converterhomeStyle =
+      const EnumNameConverter<HomeStyle>(HomeStyle.values);
 }
 
 class Flag extends DataClass implements Insertable<Flag> {
   final int id;
   final bool day4Celebrated;
   final int? lastWeeklyReplayDayNumber;
-  final int homeStyle;
+  final HomeStyle homeStyle;
   const Flag({
     required this.id,
     required this.day4Celebrated,
@@ -1710,7 +1764,11 @@ class Flag extends DataClass implements Insertable<Flag> {
         lastWeeklyReplayDayNumber,
       );
     }
-    map['home_style'] = Variable<int>(homeStyle);
+    {
+      map['home_style'] = Variable<String>(
+        $FlagsTable.$converterhomeStyle.toSql(homeStyle),
+      );
+    }
     return map;
   }
 
@@ -1737,7 +1795,9 @@ class Flag extends DataClass implements Insertable<Flag> {
       lastWeeklyReplayDayNumber: serializer.fromJson<int?>(
         json['lastWeeklyReplayDayNumber'],
       ),
-      homeStyle: serializer.fromJson<int>(json['homeStyle']),
+      homeStyle: $FlagsTable.$converterhomeStyle.fromJson(
+        serializer.fromJson<String>(json['homeStyle']),
+      ),
     );
   }
   @override
@@ -1749,7 +1809,9 @@ class Flag extends DataClass implements Insertable<Flag> {
       'lastWeeklyReplayDayNumber': serializer.toJson<int?>(
         lastWeeklyReplayDayNumber,
       ),
-      'homeStyle': serializer.toJson<int>(homeStyle),
+      'homeStyle': serializer.toJson<String>(
+        $FlagsTable.$converterhomeStyle.toJson(homeStyle),
+      ),
     };
   }
 
@@ -1757,7 +1819,7 @@ class Flag extends DataClass implements Insertable<Flag> {
     int? id,
     bool? day4Celebrated,
     Value<int?> lastWeeklyReplayDayNumber = const Value.absent(),
-    int? homeStyle,
+    HomeStyle? homeStyle,
   }) => Flag(
     id: id ?? this.id,
     day4Celebrated: day4Celebrated ?? this.day4Celebrated,
@@ -1807,7 +1869,7 @@ class FlagsCompanion extends UpdateCompanion<Flag> {
   final Value<int> id;
   final Value<bool> day4Celebrated;
   final Value<int?> lastWeeklyReplayDayNumber;
-  final Value<int> homeStyle;
+  final Value<HomeStyle> homeStyle;
   const FlagsCompanion({
     this.id = const Value.absent(),
     this.day4Celebrated = const Value.absent(),
@@ -1824,7 +1886,7 @@ class FlagsCompanion extends UpdateCompanion<Flag> {
     Expression<int>? id,
     Expression<bool>? day4Celebrated,
     Expression<int>? lastWeeklyReplayDayNumber,
-    Expression<int>? homeStyle,
+    Expression<String>? homeStyle,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1839,7 +1901,7 @@ class FlagsCompanion extends UpdateCompanion<Flag> {
     Value<int>? id,
     Value<bool>? day4Celebrated,
     Value<int?>? lastWeeklyReplayDayNumber,
-    Value<int>? homeStyle,
+    Value<HomeStyle>? homeStyle,
   }) {
     return FlagsCompanion(
       id: id ?? this.id,
@@ -1865,7 +1927,9 @@ class FlagsCompanion extends UpdateCompanion<Flag> {
       );
     }
     if (homeStyle.present) {
-      map['home_style'] = Variable<int>(homeStyle.value);
+      map['home_style'] = Variable<String>(
+        $FlagsTable.$converterhomeStyle.toSql(homeStyle.value),
+      );
     }
     return map;
   }
@@ -2536,16 +2600,18 @@ typedef $$CheckInsTableProcessedTableManager =
     >;
 typedef $$ClipsTableCreateCompanionBuilder = ClipsCompanion Function({
   Value<int> id,
-  required int type,
+  required ClipType type,
   required String path,
+  required int attempt,
   required DateTime recordedAt,
   required int dayNumber,
   required int durationMs,
 });
 typedef $$ClipsTableUpdateCompanionBuilder = ClipsCompanion Function({
   Value<int> id,
-  Value<int> type,
+  Value<ClipType> type,
   Value<String> path,
+  Value<int> attempt,
   Value<DateTime> recordedAt,
   Value<int> dayNumber,
   Value<int> durationMs,
@@ -2565,13 +2631,19 @@ class $$ClipsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get type => $composableBuilder(
-    column: $table.type,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnWithTypeConverterFilters<ClipType, ClipType, String> get type =>
+      $composableBuilder(
+        column: $table.type,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
 
   ColumnFilters<String> get path => $composableBuilder(
     column: $table.path,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get attempt => $composableBuilder(
+    column: $table.attempt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2605,13 +2677,18 @@ class $$ClipsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get type => $composableBuilder(
+  ColumnOrderings<String> get type => $composableBuilder(
     column: $table.type,
     builder: (column) => ColumnOrderings(column),
   );
 
   ColumnOrderings<String> get path => $composableBuilder(
     column: $table.path,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get attempt => $composableBuilder(
+    column: $table.attempt,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -2643,11 +2720,14 @@ class $$ClipsTableAnnotationComposer
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<int> get type =>
+  GeneratedColumnWithTypeConverter<ClipType, String> get type =>
       $composableBuilder(column: $table.type, builder: (column) => column);
 
   GeneratedColumn<String> get path =>
       $composableBuilder(column: $table.path, builder: (column) => column);
+
+  GeneratedColumn<int> get attempt =>
+      $composableBuilder(column: $table.attempt, builder: (column) => column);
 
   GeneratedColumn<DateTime> get recordedAt => $composableBuilder(
     column: $table.recordedAt,
@@ -2692,8 +2772,9 @@ class $$ClipsTableTableManager
           updateCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
-                Value<int> type = const Value.absent(),
+                Value<ClipType> type = const Value.absent(),
                 Value<String> path = const Value.absent(),
+                Value<int> attempt = const Value.absent(),
                 Value<DateTime> recordedAt = const Value.absent(),
                 Value<int> dayNumber = const Value.absent(),
                 Value<int> durationMs = const Value.absent(),
@@ -2701,6 +2782,7 @@ class $$ClipsTableTableManager
                 id: id,
                 type: type,
                 path: path,
+                attempt: attempt,
                 recordedAt: recordedAt,
                 dayNumber: dayNumber,
                 durationMs: durationMs,
@@ -2708,8 +2790,9 @@ class $$ClipsTableTableManager
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
-                required int type,
+                required ClipType type,
                 required String path,
+                required int attempt,
                 required DateTime recordedAt,
                 required int dayNumber,
                 required int durationMs,
@@ -2717,6 +2800,7 @@ class $$ClipsTableTableManager
                 id: id,
                 type: type,
                 path: path,
+                attempt: attempt,
                 recordedAt: recordedAt,
                 dayNumber: dayNumber,
                 durationMs: durationMs,
@@ -2756,13 +2840,13 @@ typedef $$FlagsTableCreateCompanionBuilder = FlagsCompanion Function({
   Value<int> id,
   Value<bool> day4Celebrated,
   Value<int?> lastWeeklyReplayDayNumber,
-  Value<int> homeStyle,
+  Value<HomeStyle> homeStyle,
 });
 typedef $$FlagsTableUpdateCompanionBuilder = FlagsCompanion Function({
   Value<int> id,
   Value<bool> day4Celebrated,
   Value<int?> lastWeeklyReplayDayNumber,
-  Value<int> homeStyle,
+  Value<HomeStyle> homeStyle,
 });
 
 class $$FlagsTableFilterComposer
@@ -2789,10 +2873,11 @@ class $$FlagsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get homeStyle => $composableBuilder(
-    column: $table.homeStyle,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnWithTypeConverterFilters<HomeStyle, HomeStyle, String> get homeStyle =>
+      $composableBuilder(
+        column: $table.homeStyle,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
 }
 
 class $$FlagsTableOrderingComposer
@@ -2819,7 +2904,7 @@ class $$FlagsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get homeStyle => $composableBuilder(
+  ColumnOrderings<String> get homeStyle => $composableBuilder(
     column: $table.homeStyle,
     builder: (column) => ColumnOrderings(column),
   );
@@ -2847,7 +2932,7 @@ class $$FlagsTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<int> get homeStyle =>
+  GeneratedColumnWithTypeConverter<HomeStyle, String> get homeStyle =>
       $composableBuilder(column: $table.homeStyle, builder: (column) => column);
 }
 
@@ -2882,7 +2967,7 @@ class $$FlagsTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<bool> day4Celebrated = const Value.absent(),
                 Value<int?> lastWeeklyReplayDayNumber = const Value.absent(),
-                Value<int> homeStyle = const Value.absent(),
+                Value<HomeStyle> homeStyle = const Value.absent(),
               }) => FlagsCompanion(
                 id: id,
                 day4Celebrated: day4Celebrated,
@@ -2894,7 +2979,7 @@ class $$FlagsTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<bool> day4Celebrated = const Value.absent(),
                 Value<int?> lastWeeklyReplayDayNumber = const Value.absent(),
-                Value<int> homeStyle = const Value.absent(),
+                Value<HomeStyle> homeStyle = const Value.absent(),
               }) => FlagsCompanion.insert(
                 id: id,
                 day4Celebrated: day4Celebrated,

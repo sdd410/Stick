@@ -28,6 +28,15 @@ class Snapshot {
   List<CheckIn> get currentCheckIns =>
       allCheckIns.where((c) => c.attempt == current.number).toList();
 
+  Snapshot withClips(List<Clip> clips) => Snapshot(
+    habit: habit,
+    current: current,
+    ended: ended,
+    allCheckIns: allCheckIns,
+    clips: clips,
+    flags: flags,
+  );
+
   @override
   bool operator ==(Object other) =>
       other is Snapshot &&
@@ -88,12 +97,22 @@ class StickRepository {
 
   Clip _clip(db.Clip r) => Clip(
     id: r.id,
-    type: ClipType.values[r.type],
+    type: r.type,
     path: r.path,
     recordedAt: r.recordedAt,
     dayNumber: r.dayNumber,
     durationMs: r.durationMs,
+    attempt: r.attempt,
   );
+
+  /// Every clip row, even when no habit exists (clips can outlive a fresh
+  /// start). Paths are as stored.
+  Future<List<Clip>> allClips() async {
+    final rows = await (_db.select(
+      _db.clips,
+    )..orderBy([(t) => OrderingTerm.asc(t.id)])).get();
+    return rows.map(_clip).toList();
+  }
 
   Future<Snapshot?> load() async {
     final habitRow = await _db.select(_db.habits).getSingleOrNull();
@@ -129,7 +148,7 @@ class StickRepository {
           : Flags(
               day4Celebrated: flagRow.day4Celebrated,
               lastWeeklyReplayDayNumber: flagRow.lastWeeklyReplayDayNumber,
-              homeStyle: HomeStyle.values[flagRow.homeStyle],
+              homeStyle: flagRow.homeStyle,
             ),
     );
   }
@@ -239,6 +258,10 @@ class StickRepository {
             quitTarget: target,
           ),
         );
+    // The weekly replay is per attempt: day 7 of the new attempt is due again.
+    await (_db.update(_db.flags)..where((t) => t.id.equals(1))).write(
+      const db.FlagsCompanion(lastWeeklyReplayDayNumber: Value(null)),
+    );
   });
 
   /// Wipes habit, attempts, check-ins and flags. Clip rows are deleted unless
@@ -252,6 +275,10 @@ class StickRepository {
           paths = rows.map((r) => r.path).toList();
           await _db.delete(_db.clips).go();
         }
+        // Kept clips belong to no attempt of the new habit.
+        await _db
+            .update(_db.clips)
+            .write(const db.ClipsCompanion(attempt: Value(0)));
         await _db.delete(_db.checkIns).go();
         await _db.delete(_db.attempts).go();
         await _db.delete(_db.habits).go();
@@ -264,17 +291,19 @@ class StickRepository {
     String path,
     int dayNumber,
     int durationMs,
-    DateTime at,
-  ) async {
+    DateTime at, {
+    required int attempt,
+  }) async {
     final id = await _db
         .into(_db.clips)
         .insert(
           db.ClipsCompanion.insert(
-            type: t.index,
+            type: t,
             path: path,
             recordedAt: at,
             dayNumber: dayNumber,
             durationMs: durationMs,
+            attempt: attempt,
           ),
         );
     return Clip(
@@ -284,6 +313,7 @@ class StickRepository {
       recordedAt: at,
       dayNumber: dayNumber,
       durationMs: durationMs,
+      attempt: attempt,
     );
   }
 
@@ -295,7 +325,7 @@ class StickRepository {
     id: const Value(1),
     day4Celebrated: Value(f.day4Celebrated),
     lastWeeklyReplayDayNumber: Value(f.lastWeeklyReplayDayNumber),
-    homeStyle: Value(f.homeStyle.index),
+    homeStyle: Value(f.homeStyle),
   );
 
   Future<void> setFlags(Flags f) async {

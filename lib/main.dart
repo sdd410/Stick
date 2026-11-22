@@ -46,11 +46,13 @@ Future<void> main() async {
     // Show setup/home anyway rather than a blank launch.
     debugPrint('initial open failed: $e');
   }
-  runApp(_Lifecycle(
+  runApp(
+    _Lifecycle(
       controller: controller,
       files: files,
       notifications: notifications,
-    ));
+    ),
+  );
 }
 
 /// Re-opens (reload + reschedule) whenever the app returns to the foreground.

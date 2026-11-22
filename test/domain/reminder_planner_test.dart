@@ -24,6 +24,7 @@ Clip clip() => Clip(
   recordedAt: DateTime(2026, 11, 1),
   dayNumber: 1,
   durationMs: 5000,
+  attempt: 1,
 );
 
 const flags = Flags(

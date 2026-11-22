@@ -143,6 +143,7 @@ class Clip {
     required this.recordedAt,
     required this.dayNumber,
     required this.durationMs,
+    required this.attempt,
   });
 
   final int id;
@@ -152,6 +153,9 @@ class Clip {
   final int dayNumber;
   final int durationMs;
 
+  /// Attempt number it was recorded in; 0 when kept across a fresh start.
+  final int attempt;
+
   Clip copyWith({
     int? id,
     ClipType? type,
@@ -159,6 +163,7 @@ class Clip {
     DateTime? recordedAt,
     int? dayNumber,
     int? durationMs,
+    int? attempt,
   }) => Clip(
     id: id ?? this.id,
     type: type ?? this.type,
@@ -166,6 +171,7 @@ class Clip {
     recordedAt: recordedAt ?? this.recordedAt,
     dayNumber: dayNumber ?? this.dayNumber,
     durationMs: durationMs ?? this.durationMs,
+    attempt: attempt ?? this.attempt,
   );
 
   @override
@@ -176,11 +182,12 @@ class Clip {
       other.path == path &&
       other.recordedAt == recordedAt &&
       other.dayNumber == dayNumber &&
-      other.durationMs == durationMs;
+      other.durationMs == durationMs &&
+      other.attempt == attempt;
 
   @override
   int get hashCode =>
-      Object.hash(id, type, path, recordedAt, dayNumber, durationMs);
+      Object.hash(id, type, path, recordedAt, dayNumber, durationMs, attempt);
 }
 
 enum HomeStyle { bigNumber, road }
