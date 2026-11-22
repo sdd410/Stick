@@ -23,12 +23,13 @@ class PlannedReminder {
 
 const _firstId = 100;
 
-/// One reminder per day for the next [days] days, at the habit's reminder time.
+/// One reminder per day for the next [days] days (28, so a month away from
+/// the app still gets nudged), at the habit's reminder time.
 ///
 /// Days after today are planned pessimistically: no further check-ins happen
 /// (a check-in happens in the app, which re-plans). The engine decides what
 /// each day looks like, so pause and quit-day rules live in one place.
-List<PlannedReminder> planReminders(Snapshot s, DateTime now, {int days = 7}) {
+List<PlannedReminder> planReminders(Snapshot s, DateTime now, {int days = 28}) {
   final today = dayKeyOf(now);
   final previous = previousForQuitDay(s.ended);
   final checkIns = s.currentCheckIns;

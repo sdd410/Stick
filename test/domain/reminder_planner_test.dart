@@ -59,18 +59,18 @@ final morning = DateTime(2026, 11, 20, 10);
 final night = DateTime(2026, 11, 20, 21);
 
 void main() {
-  test('seven reminders when not yet checked in and time ahead', () {
+  test('28 reminders when not yet checked in and time ahead', () {
     final p = planReminders(snap(checkInOffsets: [-3, -2, -1]), morning);
-    expect(p.length, 7);
+    expect(p.length, 28);
     expect(p.first.at, DateTime(2026, 11, 20, 19));
-    expect(p.last.at, DateTime(2026, 11, 26, 19));
+    expect(p.last.at, DateTime(2026, 12, 17, 19));
     expect(p.first.title, 'Day 4 of Run');
     expect(p.first.body, 'Show up today. Just show up for 2 minutes.');
   });
 
   test('skips today after check-in', () {
     final p = planReminders(snap(checkInOffsets: [-3, -2, -1, 0]), morning);
-    expect(p.length, 6);
+    expect(p.length, 27);
     expect(p.first.at, DateTime(2026, 11, 21, 19));
     expect(p.first.id, 101);
     expect(p.first.title, 'Day 5 of Run');
@@ -79,7 +79,7 @@ void main() {
   test('skips today when the time has passed', () {
     final p = planReminders(snap(checkInOffsets: [-3, -2, -1]), night);
     expect(p.first.at, DateTime(2026, 11, 21, 19));
-    expect(p.length, 6);
+    expect(p.length, 27);
   });
 
   test('day 3 uses spec wording', () {
@@ -145,12 +145,12 @@ void main() {
     expect(p.first.payload, isNull);
   });
 
-  test('ids are stable 100 to 106', () {
+  test('ids are stable 100 to 127', () {
     final p = planReminders(snap(checkInOffsets: [-1]), morning);
-    expect(p.map((r) => r.id), [100, 101, 102, 103, 104, 105, 106]);
+    expect(p.map((r) => r.id), [for (var i = 100; i <= 127; i++) i]);
     // Same ids regardless of skipped day.
     final q = planReminders(snap(checkInOffsets: [-1]), night);
-    expect(q.map((r) => r.id), [101, 102, 103, 104, 105, 106]);
+    expect(q.map((r) => r.id), [for (var i = 101; i <= 127; i++) i]);
   });
 
   test('reminder before 3 am belongs to the previous day key', () {
