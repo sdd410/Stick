@@ -14,6 +14,7 @@ import 'package:stick/services/clip_files.dart';
 import 'package:stick/services/clip_recorder.dart';
 import 'package:stick/theme.dart';
 import 'package:stick/ui/record/record_screen.dart';
+import 'package:stick/ui/record/voice_level_view.dart';
 
 class FakeRecorder implements ClipRecorder {
   PermissionResult permission = PermissionResult.granted;
@@ -27,6 +28,7 @@ class FakeRecorder implements ClipRecorder {
   final _level = StreamController<double>.broadcast();
 
   void emit(Duration d) => _elapsed.add(d);
+  void emitLevel(double v) => _level.add(v);
 
   int requests = 0;
   int statusChecks = 0;
@@ -171,6 +173,89 @@ void main() {
     final d = Directory('${tmp.path}/clips');
     return d.existsSync() ? d.listSync().whereType<File>().toList() : [];
   }
+
+  testWidgets('recording shows a small stop square inside the button', (
+    t,
+  ) async {
+    await pump(t);
+    await choose(t, 'Voice');
+    await tapRecord(t);
+    final btn = find.byKey(const Key('record-button'));
+    final square = find.descendant(
+      of: btn,
+      matching: find.byKey(const Key('stop-square')),
+    );
+    expect(square, findsOneWidget);
+    expect(t.getSize(square), const Size(28, 28));
+    final circle = find.descendant(
+      of: btn,
+      matching: find.byWidgetPredicate(
+        (w) =>
+            w is Container &&
+            w.decoration is BoxDecoration &&
+            (w.decoration as BoxDecoration).shape == BoxShape.circle,
+      ),
+    );
+    expect(t.getSize(circle), const Size(72, 72));
+    await t.tap(btn);
+    await t.pumpAndSettle();
+  });
+
+  testWidgets('voice recording shows the level view', (t) async {
+    await pump(t);
+    await choose(t, 'Voice');
+    await tapRecord(t);
+    expect(find.byType(VoiceLevelView), findsOneWidget);
+    await t.tap(find.byKey(const Key('record-button')));
+    await t.pumpAndSettle();
+  });
+
+  testWidgets('no overflow at 360dp, text scale 1.3', (t) async {
+    t.view.physicalSize = const Size(360, 640);
+    t.view.devicePixelRatio = 1.0;
+    addTearDown(t.view.reset);
+    t.platformDispatcher.textScaleFactorTestValue = 1.3;
+    addTearDown(t.platformDispatcher.clearTextScaleFactorTestValue);
+    await pump(t);
+    await choose(t, 'Voice');
+    await tapRecord(t);
+    expect(t.takeException(), isNull);
+    await t.tap(find.byKey(const Key('record-button')));
+    await t.pumpAndSettle();
+  });
+
+  testWidgets('record button label switches when recording starts', (t) async {
+    final handle = t.ensureSemantics();
+    await pump(t);
+    await choose(t, 'Voice');
+    expect(find.bySemanticsLabel('Start recording'), findsOneWidget);
+    await tapRecord(t);
+    expect(find.bySemanticsLabel('Stop recording'), findsOneWidget);
+    expect(find.bySemanticsLabel('Start recording'), findsNothing);
+    await t.tap(find.byKey(const Key('record-button')));
+    await t.pumpAndSettle();
+    handle.dispose();
+  });
+
+  testWidgets('voice bars reset between takes', (t) async {
+    await pump(t);
+    await choose(t, 'Voice');
+    await tapRecord(t);
+    rec.emitLevel(1.0);
+    await t.pumpAndSettle();
+    expect(t.getSize(find.byKey(const Key('voice-bar-29'))).height, 56);
+    await t.tap(find.byKey(const Key('record-button')));
+    await t.pump();
+    await settle(t);
+    await t.tap(find.text('Redo'));
+    await t.pump();
+    await settle(t);
+    await tapRecord(t);
+    await t.pumpAndSettle();
+    expect(t.getSize(find.byKey(const Key('voice-bar-29'))).height, 4);
+    await t.tap(find.byKey(const Key('record-button')));
+    await t.pumpAndSettle();
+  });
 
   testWidgets('denied permission shows Open settings and does not crash', (
     t,
