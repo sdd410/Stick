@@ -12,12 +12,14 @@ import 'package:stick/services/clip_files.dart';
 
 class CountingSink implements ReminderSink {
   int reschedules = 0;
+  Snapshot? last;
   bool permission = true;
   bool throws = false;
 
   @override
-  Future<void> reschedule(Snapshot s, DateTime now) async {
+  Future<void> reschedule(Snapshot? s, DateTime now) async {
     reschedules++;
+    last = s;
     if (throws) throw StateError('boom');
   }
 
@@ -87,8 +89,10 @@ void main() {
 
   test('every change reschedules reminders', () async {
     await c.open();
-    expect(sink.reschedules, 0); // nothing to schedule before setup
-    var n = 0;
+    // Before setup the sink is told there is nothing to remind about.
+    expect(sink.reschedules, 1);
+    expect(sink.last, isNull);
+    var n = 1;
     Future<void> expectBump(Future<void> Function() act) async {
       await act();
       expect(sink.reschedules, ++n);
@@ -109,6 +113,7 @@ void main() {
     await setup();
     await c.freshStart(keepClips: false);
     expect(c.needsSetup, isTrue);
+    expect(sink.last, isNull); // pending reminders get cancelled
   });
 
   test('blank tiny is stored as null', () async {

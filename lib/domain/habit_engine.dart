@@ -64,15 +64,21 @@ HomeState computeHomeState({
   );
 }
 
-/// Quit day learned from the most recent attempt that has a first miss, else 3.
-int quitTargetFor(List<Attempt> endedAttempts) {
+/// The most recent ended attempt that has a first miss (highest number), or
+/// null. The one place this is chosen, so the controller and the reminder
+/// planner cannot drift.
+Attempt? previousForQuitDay(List<Attempt> endedAttempts) {
   Attempt? best;
   for (final a in endedAttempts) {
     if (a.firstMissDay == null) continue;
     if (best == null || a.number > best.number) best = a;
   }
-  return best?.firstMissDay ?? 3;
+  return best;
 }
+
+/// Quit day learned from the most recent attempt that has a first miss, else 3.
+int quitTargetFor(List<Attempt> endedAttempts) =>
+    previousForQuitDay(endedAttempts)?.firstMissDay ?? 3;
 
 /// The day number an attempt stopped on: check-ins + 1.
 int finalDayOf(List<CheckIn> attemptCheckIns) => attemptCheckIns.length + 1;

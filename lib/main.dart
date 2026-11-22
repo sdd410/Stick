@@ -10,6 +10,7 @@ import 'data/database.dart';
 import 'data/repository.dart';
 import 'services/clip_files.dart';
 import 'services/clip_recorder.dart';
+import 'services/notification_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,10 +25,19 @@ Future<void> main() async {
     ),
   );
   final files = ClipFiles(await getApplicationDocumentsDirectory());
+  final notifications = NotificationService();
+  try {
+    await notifications.init((payload) {
+      if (payload == 'replay') openReplayFromNotification(files);
+    });
+  } catch (e) {
+    // Reminders are best effort; the app still works without them.
+    debugPrint('notification init failed: $e');
+  }
   final controller = StickController(
     repo: StickRepository(StickDatabase()),
     clock: DateTime.now,
-    reminders: NoopReminderSink(),
+    reminders: notifications,
     clipFiles: files,
   );
   try {
@@ -36,14 +46,23 @@ Future<void> main() async {
     // Show setup/home anyway rather than a blank launch.
     debugPrint('initial open failed: $e');
   }
-  runApp(_Lifecycle(controller: controller, files: files));
+  runApp(_Lifecycle(
+      controller: controller,
+      files: files,
+      notifications: notifications,
+    ));
 }
 
 /// Re-opens (reload + reschedule) whenever the app returns to the foreground.
 class _Lifecycle extends StatefulWidget {
-  const _Lifecycle({required this.controller, required this.files});
+  const _Lifecycle({
+    required this.controller,
+    required this.files,
+    required this.notifications,
+  });
   final StickController controller;
   final ClipFiles files;
+  final NotificationService notifications;
 
   @override
   State<_Lifecycle> createState() => _LifecycleState();
@@ -56,6 +75,16 @@ class _LifecycleState extends State<_Lifecycle> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // Launched by tapping a reminder: act once the navigator exists.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        if (await widget.notifications.launchPayload() == 'replay') {
+          await openReplayFromNotification(widget.files);
+        }
+      } catch (e) {
+        debugPrint('launch from notification failed: $e');
+      }
+    });
   }
 
   @override

@@ -9,14 +9,14 @@ import '../domain/models.dart';
 import '../services/clip_files.dart';
 
 abstract class ReminderSink {
-  Future<void> reschedule(Snapshot s, DateTime now);
+  Future<void> reschedule(Snapshot? s, DateTime now);
   Future<bool> requestPermission();
 }
 
 /// Stand-in until the real notification sink exists.
 class NoopReminderSink implements ReminderSink {
   @override
-  Future<void> reschedule(Snapshot s, DateTime now) async {}
+  Future<void> reschedule(Snapshot? s, DateTime now) async {}
 
   @override
   Future<bool> requestPermission() async => false;
@@ -59,15 +59,10 @@ class StickController extends ChangeNotifier {
   }
 
   HomeState _compute(Snapshot s) {
-    Attempt? previous;
-    for (final a in s.ended) {
-      if (a.firstMissDay == null) continue;
-      if (previous == null || a.number > previous.number) previous = a;
-    }
     return computeHomeState(
       habit: s.habit,
       attempt: s.current,
-      previous: previous,
+      previous: previousForQuitDay(s.ended),
       checkIns: s.currentCheckIns,
       clips: s.clips,
       flags: s.flags,
@@ -87,7 +82,6 @@ class StickController extends ChangeNotifier {
 
   /// Reminders are best effort: a failing sink must never block the UI.
   Future<void> _reschedule(Snapshot? s) async {
-    if (s == null) return;
     try {
       await _reminders.reschedule(s, _clock());
     } catch (e, st) {

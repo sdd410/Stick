@@ -59,7 +59,7 @@ class FakeRecorder implements ClipRecorder {
 
 class FakeSink implements ReminderSink {
   @override
-  Future<void> reschedule(Snapshot s, DateTime now) async {}
+  Future<void> reschedule(Snapshot? s, DateTime now) async {}
   @override
   Future<bool> requestPermission() async => true;
 }

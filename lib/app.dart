@@ -38,6 +38,17 @@ Future<void> openReplay(
   );
 }
 
+/// Lets a notification tap open screens without a BuildContext.
+final navigatorKey = GlobalKey<NavigatorState>();
+
+/// Opens the replay from a tapped "paused" reminder. Does nothing if there is
+/// no navigator yet or no clips.
+Future<void> openReplayFromNotification(ClipFiles files) async {
+  final ctx = navigatorKey.currentContext;
+  if (ctx == null || !ctx.mounted) return;
+  await openReplay(ctx, files: files);
+}
+
 class StickApp extends StatelessWidget {
   const StickApp({super.key, this.recorder, this.files});
 
@@ -48,6 +59,7 @@ class StickApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Stick',
       debugShowCheckedModeBanner: false,
       theme: stickTheme(),
