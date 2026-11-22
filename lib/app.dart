@@ -3,10 +3,40 @@ import 'package:flutter/material.dart';
 import 'controller/stick_scope.dart';
 import 'services/clip_files.dart';
 import 'services/clip_recorder.dart';
+import 'domain/models.dart';
+import 'domain/replay_rules.dart';
 import 'theme.dart';
+import 'ui/replay/clip_list_screen.dart';
+import 'ui/replay/clip_player.dart';
+import 'ui/replay/replay_screen.dart';
 import 'ui/home/home_screen.dart';
 import 'ui/record/record_screen.dart';
 import 'ui/setup/setup_flow.dart';
+
+/// Opens the story-style replay. Task 10 (notification) and Task 12 (fresh
+/// start) call this. Pass [clips] to play specific ones instead of the pick.
+Future<void> openReplay(
+  BuildContext context, {
+  required ClipFiles files,
+  String? headline,
+  List<Clip>? clips,
+  ClipPlayerFactory playerFactory = videoPlayerClipPlayer,
+}) async {
+  final chosen =
+      clips ??
+      selectReplayClips(StickScope.of(context).snapshot?.clips ?? const []);
+  if (chosen.isEmpty) return;
+  await Navigator.of(context).push<void>(
+    MaterialPageRoute(
+      builder: (_) => ReplayScreen(
+        clips: chosen,
+        files: files,
+        headline: headline,
+        playerFactory: playerFactory,
+      ),
+    ),
+  );
+}
 
 class StickApp extends StatelessWidget {
   const StickApp({super.key, this.recorder, this.files});
@@ -49,6 +79,17 @@ class _RootState extends State<_Root> {
     ),
   );
 
+  void _openClipList() {
+    final files = widget.files!;
+    Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (ctx) => ClipListScreen(
+          onPlay: (clip) => openReplay(ctx, files: files, clips: [clip]),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = StickScope.of(context);
@@ -60,6 +101,12 @@ class _RootState extends State<_Root> {
         onFinished: () => setState(() => _inSetup = false),
       );
     }
-    return HomeScreen(onAddMessage: _canRecord ? _openRecord : null);
+    return HomeScreen(
+      onAddMessage: _canRecord ? _openRecord : null,
+      onPlayReplay: widget.files == null
+          ? null
+          : () => openReplay(context, files: widget.files!),
+      onSeeAll: widget.files == null ? null : _openClipList,
+    );
   }
 }

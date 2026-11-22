@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../controller/stick_controller.dart';
 import '../../controller/stick_scope.dart';
 import '../../domain/habit_engine.dart';
 import '../../domain/models.dart';
@@ -13,6 +14,7 @@ class HomeScreen extends StatefulWidget {
     this.onOpenProgress,
     this.onAddMessage,
     this.onPlayReplay,
+    this.onSeeAll,
     this.onOpenSettings,
   });
 
@@ -20,6 +22,7 @@ class HomeScreen extends StatefulWidget {
   final VoidCallback? onOpenProgress;
   final VoidCallback? onAddMessage;
   final VoidCallback? onPlayReplay;
+  final VoidCallback? onSeeAll;
   final VoidCallback? onOpenSettings;
 
   @override
@@ -29,6 +32,27 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   // Blocks a second tap while the first check-in is still running.
   bool _busy = false;
+  // The weekly replay opens at most once per screen.
+  bool _weeklyHandled = false;
+
+  void _maybeOpenWeeklyReplay(
+    StickController c,
+    HomeState home,
+    bool hasClips,
+  ) {
+    if (_weeklyHandled ||
+        !home.weeklyReplayDue ||
+        !hasClips ||
+        widget.onPlayReplay == null) {
+      return;
+    }
+    _weeklyHandled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      widget.onPlayReplay!();
+      c.markWeeklyReplaySeen();
+    });
+  }
 
   Future<void> _guarded(Future<void> Function() op) async {
     if (_busy) return;
@@ -51,6 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final hasClips = snap.clips.isNotEmpty;
     final showReplay = hasClips && widget.onPlayReplay != null;
     final textTheme = Theme.of(context).textTheme;
+    _maybeOpenWeeklyReplay(c, home, hasClips);
 
     final counter = Text(
       'Attempt ${home.attemptNumber} · Day ${home.dayNumber}',
@@ -197,6 +222,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                     ),
+                    if (hasClips && widget.onSeeAll != null)
+                      TextButton(
+                        onPressed: widget.onSeeAll,
+                        child: const Text('See all'),
+                      ),
                     if (widget.onAddMessage != null)
                       TextButton(
                         onPressed: widget.onAddMessage,
