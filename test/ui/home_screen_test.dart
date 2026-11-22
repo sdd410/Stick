@@ -65,11 +65,15 @@ HomeState state({
   firstMissToRecord: null,
 );
 
-Snapshot snap({List<Clip> clips = const [], String? tiny}) => Snapshot(
+Snapshot snap({
+  List<Clip> clips = const [],
+  String? tiny,
+  String why = 'Be healthier',
+}) => Snapshot(
   habit: Habit(
     name: 'Walk',
     tiny: tiny,
-    why: 'Be healthier',
+    why: why,
     reminderMinutes: 1140,
     createdAt: DateTime(2026, 11, 1),
   ),
@@ -196,6 +200,27 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Just do this. Get to day 6.'), findsOneWidget);
+  });
+
+  testWidgets('Last time line only appears on the quit day itself', (t) async {
+    // Day after picking back up: afterMiss, not the quit day.
+    await pump(
+      t,
+      state(attempt: 2, day: 4, rescue: RescueReason.afterMiss, lastQuitDay: 5),
+    );
+    expect(find.textContaining('Last time you stopped'), findsNothing);
+    expect(find.text('Just do this. Get to day 5.'), findsOneWidget);
+  });
+
+  testWidgets('empty why and no clips hides the blank rescue line', (t) async {
+    await pump(
+      t,
+      state(rescue: RescueReason.quitDay),
+      sn: snap(why: ''),
+      onPlayReplay: () {},
+    );
+    expect(find.text(''), findsNothing);
+    expect(find.text('Just show up for 2 minutes.'), findsOneWidget);
   });
 
   testWidgets('rescue without clips shows why text', (t) async {

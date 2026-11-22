@@ -188,7 +188,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            if (showRescue &&
+                            if (home.rescue == RescueReason.quitDay &&
                                 home.lastQuitDay != null &&
                                 home.attemptNumber > 1) ...[
                               Text(
@@ -225,7 +225,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     '▶ You have something to say',
                                   ),
                                 )
-                              else
+                              else if (snap.habit.why.isNotEmpty)
                                 Text(
                                   snap.habit.why,
                                   textAlign: TextAlign.center,

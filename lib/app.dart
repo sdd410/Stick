@@ -112,12 +112,27 @@ class _RootState extends State<_Root> {
   // Setup stays on screen after the habit exists, for the optional first clip.
   bool _inSetup = false;
 
+  // Buttons whose pushed screen is still open; a second tap is ignored.
+  final _open = <String>{};
+
+  Future<void> _once(String key, Future<void> Function() push) async {
+    if (!_open.add(key)) return;
+    try {
+      await push();
+    } finally {
+      _open.remove(key);
+    }
+  }
+
   bool get _canRecord => widget.recorder != null && widget.files != null;
 
-  Future<void> _openRecord() => Navigator.of(context).push<bool>(
-    MaterialPageRoute(
-      builder: (_) =>
-          RecordScreen(recorder: widget.recorder!, files: widget.files!),
+  Future<void> _openRecord() => _once(
+    'record',
+    () => Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) =>
+            RecordScreen(recorder: widget.recorder!, files: widget.files!),
+      ),
     ),
   );
 
@@ -132,17 +147,21 @@ class _RootState extends State<_Root> {
     );
   }
 
-  void _openSettings() {
+  Future<void> _openSettings() {
     final files = widget.files;
-    Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        builder: (ctx) => SettingsScreen(
-          readManufacturer: widget.manufacturer,
-          openSystemSettings: widget.openSystemSettings,
-          onManageClips: files == null ? null : _openClipList,
-          onPlayReplay: files == null
-              ? null
-              : (headline) => openReplay(ctx, files: files, headline: headline),
+    return _once(
+      'settings',
+      () => Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (ctx) => SettingsScreen(
+            readManufacturer: widget.manufacturer,
+            openSystemSettings: widget.openSystemSettings,
+            onManageClips: files == null ? null : _openClipList,
+            onPlayReplay: files == null
+                ? null
+                : (headline) =>
+                      openReplay(ctx, files: files, headline: headline),
+          ),
         ),
       ),
     );
@@ -166,14 +185,17 @@ class _RootState extends State<_Root> {
     );
   }
 
-  void _openProgress() {
+  Future<void> _openProgress() {
     final files = widget.files;
-    Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        builder: (ctx) => ProgressScreen(
-          onOpenReplay: files == null
-              ? null
-              : () => openReplay(ctx, files: files),
+    return _once(
+      'progress',
+      () => Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (ctx) => ProgressScreen(
+            onOpenReplay: files == null
+                ? null
+                : () => openReplay(ctx, files: files),
+          ),
         ),
       ),
     );
