@@ -8,6 +8,7 @@ import '../../domain/models.dart';
 import '../../services/clip_files.dart';
 import '../../services/clip_recorder.dart';
 import '../../theme.dart';
+import 'voice_level_view.dart';
 
 enum _Phase { choose, working, blocked, ready, recording, review }
 
@@ -388,7 +389,12 @@ class _RecordScreenState extends State<RecordScreen>
                   borderRadius: BorderRadius.circular(16),
                   child: Center(child: _rec.buildPreview(context)),
                 )
-              : Center(child: _levelMeter()),
+              : Center(
+                  child: VoiceLevelView(
+                    key: ValueKey(_path),
+                    level: _rec.level,
+                  ),
+                ),
         ),
         if (_notice != null)
           Padding(
@@ -421,9 +427,20 @@ class _RecordScreenState extends State<RecordScreen>
                   height: 72,
                   decoration: BoxDecoration(
                     color: StickColors.lime,
-                    shape: recording ? BoxShape.rectangle : BoxShape.circle,
-                    borderRadius: recording ? BorderRadius.circular(16) : null,
+                    shape: BoxShape.circle,
                   ),
+                  alignment: Alignment.center,
+                  child: recording
+                      ? Container(
+                          key: const Key('stop-square'),
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: StickColors.bg,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        )
+                      : null,
                 ),
               ),
             ],
@@ -432,23 +449,4 @@ class _RecordScreenState extends State<RecordScreen>
       ],
     );
   }
-
-  Widget _levelMeter() => StreamBuilder<double>(
-    stream: _rec.level,
-    initialData: 0,
-    builder: (context, snap) {
-      final v = snap.data ?? 0;
-      final size = 120 + 80 * v;
-      return AnimatedContainer(
-        duration: const Duration(milliseconds: 100),
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: StickColors.lime.withValues(alpha: 0.25),
-        ),
-        child: const Icon(Icons.mic, size: 48, color: StickColors.lime),
-      );
-    },
-  );
 }
