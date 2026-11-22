@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
-import 'app.dart';
+import 'app.dart' show openReplayFromNotification;
+import 'lifecycle.dart';
 import 'controller/stick_controller.dart';
-import 'controller/stick_scope.dart';
 import 'data/database.dart';
 import 'data/repository.dart';
 import 'services/clip_files.dart';
@@ -43,70 +43,15 @@ Future<void> main() async {
   try {
     await controller.open();
   } catch (e) {
-    // Show setup/home anyway rather than a blank launch.
+    // The app shows a retry screen (controller.loadError).
     debugPrint('initial open failed: $e');
   }
   runApp(
-    _Lifecycle(
+    StickLifecycle(
       controller: controller,
       files: files,
-      notifications: notifications,
+      recorder: DeviceClipRecorder(),
+      launchPayload: notifications.launchPayload,
     ),
-  );
-}
-
-/// Re-opens (reload + reschedule) whenever the app returns to the foreground.
-class _Lifecycle extends StatefulWidget {
-  const _Lifecycle({
-    required this.controller,
-    required this.files,
-    required this.notifications,
-  });
-  final StickController controller;
-  final ClipFiles files;
-  final NotificationService notifications;
-
-  @override
-  State<_Lifecycle> createState() => _LifecycleState();
-}
-
-class _LifecycleState extends State<_Lifecycle> with WidgetsBindingObserver {
-  final _recorder = DeviceClipRecorder();
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    // Launched by tapping a reminder: act once the navigator exists.
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      try {
-        if (await widget.notifications.launchPayload() == 'replay') {
-          await openReplayFromNotification(widget.files);
-        }
-      } catch (e) {
-        debugPrint('launch from notification failed: $e');
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      widget.controller.open().catchError(
-        (Object e) => debugPrint('open on resume failed: $e'),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) => StickScope(
-    controller: widget.controller,
-    child: StickApp(recorder: _recorder, files: widget.files),
   );
 }

@@ -51,10 +51,13 @@ final navigatorKey = GlobalKey<NavigatorState>();
 
 /// Opens the replay from a tapped "paused" reminder. Does nothing if there is
 /// no navigator yet or no clips.
-Future<void> openReplayFromNotification(ClipFiles files) async {
+Future<void> openReplayFromNotification(
+  ClipFiles files, {
+  ClipPlayerFactory playerFactory = videoPlayerClipPlayer,
+}) async {
   final ctx = navigatorKey.currentContext;
   if (ctx == null || !ctx.mounted) return;
-  await openReplay(ctx, files: files);
+  await openReplay(ctx, files: files, playerFactory: playerFactory);
 }
 
 class StickApp extends StatelessWidget {
