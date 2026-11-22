@@ -5,6 +5,7 @@ import '../../domain/habit_engine.dart';
 import '../../domain/models.dart';
 import '../../theme.dart';
 import 'home_big_number.dart';
+import 'home_road.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -61,8 +62,9 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
 
-    // Style B ("road") arrives with Settings; until then both show style A.
-    final number = HomeBigNumber(state: home);
+    final number = snap.flags.homeStyle == HomeStyle.road
+        ? HomeRoad(state: home)
+        : HomeBigNumber(state: home);
 
     final String buttonLabel;
     final VoidCallback? onButton;
@@ -97,11 +99,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             ? counter
                             : InkWell(
                                 onTap: widget.onOpenProgress,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 12,
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    minHeight: 48,
                                   ),
-                                  child: counter,
+                                  child: Align(
+                                    alignment: Alignment.centerLeft,
+                                    widthFactor: 1,
+                                    child: counter,
+                                  ),
                                 ),
                               ),
                         const Spacer(),
