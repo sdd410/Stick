@@ -92,15 +92,10 @@ class StickDatabase extends _$StickDatabase {
     // When schemaVersion grows, add one explicit step per version here (and
     // dump the new schema to drift_schemas/). Failing loudly beats drift's
     // silent default for a version nobody wrote a step for.
+    // Replace the throw with `for (var v = from; v < to; v++) switch (v) {...}`
+    // once a step exists.
     onUpgrade: (m, from, to) async {
-      for (var v = from; v < to; v++) {
-        switch (v) {
-          default:
-            throw UnsupportedError(
-              'No migration from schema version $v to ${v + 1}',
-            );
-        }
-      }
+      throw UnsupportedError('No migration from schema version $from to $to');
     },
   );
 }
