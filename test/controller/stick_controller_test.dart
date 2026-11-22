@@ -1,10 +1,14 @@
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
+
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stick/controller/stick_controller.dart';
 import 'package:stick/data/database.dart' as db_;
 import 'package:stick/data/repository.dart';
 import 'package:stick/domain/models.dart';
+import 'package:stick/services/clip_files.dart';
 
 class CountingSink implements ReminderSink {
   int reschedules = 0;
@@ -139,5 +143,58 @@ void main() {
     expect(c.snapshot!.currentCheckIns, hasLength(1));
     expect(c.home!.dayNumber, 2);
     expect(c.home!.checkedInToday, isTrue);
+  });
+
+  group('clips', () {
+    late Directory tmp;
+    late ClipFiles files;
+
+    File makeFile(String name) {
+      final f = File('${tmp.path}/$name')..writeAsBytesSync([1, 2, 3]);
+      return f;
+    }
+
+    setUp(() {
+      tmp = Directory.systemTemp.createTempSync('ctrlclips');
+      files = ClipFiles(tmp);
+      c = StickController(
+        repo: repo,
+        clock: () => now,
+        reminders: sink,
+        clipFiles: files,
+      );
+    });
+    tearDown(() => tmp.deleteSync(recursive: true));
+
+    test('addClip stores the clip on the current day', () async {
+      await setup();
+      final f = makeFile('a.m4a');
+      await c.addClip(ClipType.voice, f.path, 4000);
+      final clip = c.snapshot!.clips.single;
+      expect(clip.dayNumber, 1);
+      expect(clip.durationMs, 4000);
+      expect(clip.recordedAt, now);
+    });
+
+    test('deleteClip removes the row and the file', () async {
+      await setup();
+      final f = makeFile('a.m4a');
+      await c.addClip(ClipType.voice, f.path, 4000);
+      await c.deleteClip(c.snapshot!.clips.single.id);
+      expect(c.snapshot!.clips, isEmpty);
+      expect(f.existsSync(), isFalse);
+    });
+
+    test('freshStart deletes clip files unless keepClips', () async {
+      await setup();
+      final f = makeFile('a.m4a');
+      await c.addClip(ClipType.voice, f.path, 4000);
+      await c.freshStart(keepClips: true);
+      expect(f.existsSync(), isTrue);
+      await setup();
+      await c.freshStart(keepClips: false);
+      // keepClips kept the row, so the second wipe deletes it and the file.
+      expect(f.existsSync(), isFalse);
+    });
   });
 }

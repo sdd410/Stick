@@ -121,20 +121,24 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                     if (showBanner)
-                      Container(
-                        margin: const EdgeInsets.only(top: 8),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: StickColors.lime),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: const Text(
-                          'Record one for future you.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            fontVariations: [FontVariation('wght', 600)],
+                      InkWell(
+                        onTap: widget.onAddMessage,
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          margin: const EdgeInsets.only(top: 8),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: StickColors.lime),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Text(
+                            'Record one for future you.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              fontVariations: [FontVariation('wght', 600)],
+                            ),
                           ),
                         ),
                       ),

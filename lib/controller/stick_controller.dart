@@ -6,6 +6,7 @@ import '../data/repository.dart';
 import '../domain/day_clock.dart';
 import '../domain/habit_engine.dart';
 import '../domain/models.dart';
+import '../services/clip_files.dart';
 
 abstract class ReminderSink {
   Future<void> reschedule(Snapshot s, DateTime now);
@@ -26,13 +27,16 @@ class StickController extends ChangeNotifier {
     required StickRepository repo,
     required Clock clock,
     required ReminderSink reminders,
+    ClipFiles? clipFiles,
   }) : _repo = repo,
        _clock = clock,
-       _reminders = reminders;
+       _reminders = reminders,
+       _clipFiles = clipFiles;
 
   final StickRepository _repo;
   final Clock _clock;
   final ReminderSink _reminders;
+  final ClipFiles? _clipFiles;
 
   Snapshot? _snapshot;
   HomeState? _home;
@@ -158,8 +162,35 @@ class StickController extends ChangeNotifier {
   });
 
   Future<void> freshStart({required bool keepClips}) => _run(() async {
-    // Task 8 wires deletion of the returned clip files.
-    await _repo.freshStart(keepClips: keepClips);
+    final paths = await _repo.freshStart(keepClips: keepClips);
+    await _deleteFiles(paths);
+    await _refresh();
+  });
+
+  Future<void> _deleteFiles(Iterable<String> paths) async {
+    final files = _clipFiles;
+    if (files == null) return;
+    for (final p in paths) {
+      try {
+        await files.delete(p);
+      } catch (e) {
+        debugPrint('Clip file delete failed: $e');
+      }
+    }
+  }
+
+  Future<void> addClip(ClipType type, String path, int durationMs) =>
+      _run(() async {
+        final h = _home;
+        if (h == null) return;
+        await _repo.addClip(type, path, h.dayNumber, durationMs, _clock());
+        await _refresh();
+      });
+
+  Future<void> deleteClip(int id) => _run(() async {
+    final clip = _snapshot?.clips.where((c) => c.id == id).firstOrNull;
+    await _repo.deleteClip(id);
+    if (clip != null) await _deleteFiles([clip.path]);
     await _refresh();
   });
 

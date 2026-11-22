@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:async';
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
@@ -9,6 +10,8 @@ import 'package:stick/controller/stick_controller.dart';
 import 'package:stick/controller/stick_scope.dart';
 import 'package:stick/data/database.dart' as db_;
 import 'package:stick/data/repository.dart';
+import 'package:stick/services/clip_files.dart';
+import 'package:stick/services/clip_recorder.dart';
 
 class FakeSink implements ReminderSink {
   FakeSink(this.granted);
@@ -32,14 +35,24 @@ void main() {
   setUp(() => db = db_.StickDatabase.forTesting(NativeDatabase.memory()));
   tearDown(() => db.close());
 
-  Future<StickController> pump(WidgetTester t, FakeSink sink) async {
+  Future<StickController> pump(
+    WidgetTester t,
+    FakeSink sink, {
+    ClipRecorder? recorder,
+    ClipFiles? files,
+  }) async {
     final c = StickController(
       repo: StickRepository(db),
       clock: () => DateTime(2026, 11, 20, 12),
       reminders: sink,
     );
     await t.runAsync(c.open);
-    await t.pumpWidget(StickScope(controller: c, child: const StickApp()));
+    await t.pumpWidget(
+      StickScope(
+        controller: c,
+        child: StickApp(recorder: recorder, files: files),
+      ),
+    );
     return c;
   }
 
@@ -98,4 +111,37 @@ void main() {
       expect(find.text('Day 1'), findsOneWidget);
     });
   }
+
+  testWidgets('offers an optional first clip after Start, Skip goes home', (
+    t,
+  ) async {
+    final tmp = Directory.systemTemp.createTempSync('setupclip');
+    addTearDown(() => tmp.deleteSync(recursive: true));
+    final c = await pump(
+      t,
+      FakeSink(true),
+      recorder: DeviceClipRecorder(),
+      files: ClipFiles(tmp),
+    );
+    await t.enterText(find.byType(TextField), 'Walk');
+    await t.pump();
+    await t.tap(find.text('Next'));
+    await t.pump();
+    await t.tap(find.text('Next'));
+    await t.pump();
+    await t.runAsync(() async {
+      final done = Completer<void>();
+      c.addListener(() {
+        if (!c.needsSetup && !done.isCompleted) done.complete();
+      });
+      await t.tap(find.text('Start'));
+      await done.future.timeout(const Duration(seconds: 5));
+    });
+    await t.pump();
+    expect(find.text('Record a message for future you'), findsOneWidget);
+    expect(find.text('Day 1'), findsNothing);
+    await t.tap(find.text('Skip'));
+    await t.pump();
+    expect(find.text('Day 1'), findsOneWidget);
+  });
 }

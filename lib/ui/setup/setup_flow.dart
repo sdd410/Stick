@@ -4,7 +4,13 @@ import '../../controller/stick_scope.dart';
 import '../../theme.dart';
 
 class SetupFlow extends StatefulWidget {
-  const SetupFlow({super.key});
+  const SetupFlow({super.key, this.onRecordFirstClip, this.onFinished});
+
+  /// Opens the record screen; null hides the optional first clip.
+  final Future<void> Function()? onRecordFirstClip;
+
+  /// Called once setup is over (after Start, or after the first-clip offer).
+  final VoidCallback? onFinished;
 
   @override
   State<SetupFlow> createState() => _SetupFlowState();
@@ -64,14 +70,57 @@ class _SetupFlowState extends State<SetupFlow> {
         why: _why.text,
         reminderMinutes: _minutes,
       );
+      if (widget.onRecordFirstClip != null) {
+        if (mounted) setState(() => _step = 3);
+      } else {
+        widget.onFinished?.call();
+      }
     } finally {
       if (mounted) setState(() => _starting = false);
     }
   }
 
+  Future<void> _recordFirst() async {
+    await widget.onRecordFirstClip?.call();
+    widget.onFinished?.call();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    if (_step == 3) {
+      return Scaffold(
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Spacer(),
+                Text(
+                  'Record one for future you.',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 32),
+                FilledButton(
+                  onPressed: _recordFirst,
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(56),
+                  ),
+                  child: const Text('Record a message for future you'),
+                ),
+                TextButton(
+                  onPressed: widget.onFinished,
+                  child: const Text('Skip'),
+                ),
+                const Spacer(),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
     final Widget body;
     switch (_step) {
       case 0:

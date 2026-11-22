@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+
 import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'app.dart';
 import 'controller/stick_controller.dart';
 import 'controller/stick_scope.dart';
 import 'data/database.dart';
 import 'data/repository.dart';
+import 'services/clip_files.dart';
+import 'services/clip_recorder.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,10 +23,12 @@ Future<void> main() async {
       systemNavigationBarIconBrightness: Brightness.light,
     ),
   );
+  final files = ClipFiles(await getApplicationDocumentsDirectory());
   final controller = StickController(
     repo: StickRepository(StickDatabase()),
     clock: DateTime.now,
     reminders: NoopReminderSink(),
+    clipFiles: files,
   );
   try {
     await controller.open();
@@ -30,19 +36,22 @@ Future<void> main() async {
     // Show setup/home anyway rather than a blank launch.
     debugPrint('initial open failed: $e');
   }
-  runApp(_Lifecycle(controller: controller));
+  runApp(_Lifecycle(controller: controller, files: files));
 }
 
 /// Re-opens (reload + reschedule) whenever the app returns to the foreground.
 class _Lifecycle extends StatefulWidget {
-  const _Lifecycle({required this.controller});
+  const _Lifecycle({required this.controller, required this.files});
   final StickController controller;
+  final ClipFiles files;
 
   @override
   State<_Lifecycle> createState() => _LifecycleState();
 }
 
 class _LifecycleState extends State<_Lifecycle> with WidgetsBindingObserver {
+  final _recorder = DeviceClipRecorder();
+
   @override
   void initState() {
     super.initState();
@@ -65,6 +74,8 @@ class _LifecycleState extends State<_Lifecycle> with WidgetsBindingObserver {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      StickScope(controller: widget.controller, child: const StickApp());
+  Widget build(BuildContext context) => StickScope(
+    controller: widget.controller,
+    child: StickApp(recorder: _recorder, files: widget.files),
+  );
 }
