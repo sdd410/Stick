@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -82,9 +84,12 @@ void main() {
       await t.enterText(find.byType(TextField), 'Head clear');
       await t.pump();
       await t.runAsync(() async {
+        final done = Completer<void>();
+        c.addListener(() {
+          if (!c.needsSetup && !done.isCompleted) done.complete();
+        });
         await t.tap(find.text('Start'));
-        // Let the permission ask and the database write finish.
-        await Future<void>.delayed(const Duration(milliseconds: 300));
+        await done.future.timeout(const Duration(seconds: 5));
       });
       await t.pump();
       expect(sink.asked, 1);

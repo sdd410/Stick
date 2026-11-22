@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../data/repository.dart';
@@ -69,31 +71,57 @@ class StickController extends ChangeNotifier {
     );
   }
 
-  Future<void> _refresh() async {
-    final s = await _load();
-    _loaded = true;
-    if (s != null) await _reminders.reschedule(s, _clock());
-    notifyListeners();
+  Future<void> _queue = Future<void>.value();
+
+  /// Runs [op] after every earlier operation finished, so loads and writes
+  /// never interleave. A failed op does not block the ones after it.
+  Future<T> _run<T>(Future<T> Function() op) {
+    final result = _queue.then((_) => op());
+    _queue = result.then<void>((_) {}, onError: (_) {});
+    return result;
   }
 
-  Future<void> open() async {
-    var s = await _load();
-    final miss = _home?.firstMissToRecord;
-    if (s != null && miss != null) {
-      await _repo.recordFirstMiss(miss);
-      s = await _load();
+  /// Reminders are best effort: a failing sink must never block the UI.
+  Future<void> _reschedule(Snapshot? s) async {
+    if (s == null) return;
+    try {
+      await _reminders.reschedule(s, _clock());
+    } catch (e, st) {
+      debugPrint('Reminder reschedule failed: $e\n$st');
     }
-    _loaded = true;
-    if (s != null) await _reminders.reschedule(s, _clock());
-    notifyListeners();
   }
+
+  Future<void> _refresh() async {
+    try {
+      final s = await _load();
+      _loaded = true;
+      await _reschedule(s);
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<void> open() => _run(() async {
+    try {
+      var s = await _load();
+      final miss = _home?.firstMissToRecord;
+      if (s != null && miss != null) {
+        await _repo.recordFirstMiss(miss);
+        s = await _load();
+      }
+      _loaded = true;
+      await _reschedule(s);
+    } finally {
+      notifyListeners();
+    }
+  });
 
   Future<void> createHabit({
     required String name,
     String? tiny,
     required String why,
     required int reminderMinutes,
-  }) async {
+  }) => _run(() async {
     final now = _clock();
     final t = tiny?.trim();
     await _repo.createHabit(
@@ -107,49 +135,49 @@ class StickController extends ChangeNotifier {
       dayKeyOf(now),
     );
     await _refresh();
-  }
+  });
 
   Future<bool> requestNotificationPermission() =>
       _reminders.requestPermission();
 
-  Future<void> checkIn() async {
+  Future<void> checkIn() => _run(() async {
     final h = _home;
     if (h == null) return;
     await _repo.checkIn(_today, tiny: h.rescue != RescueReason.none);
     await _refresh();
-  }
+  });
 
-  Future<void> pickBackUp() async {
+  Future<void> pickBackUp() => _run(() async {
     await _repo.pickBackUp(_today);
     await _refresh();
-  }
+  });
 
-  Future<void> resetAttempt() async {
+  Future<void> resetAttempt() => _run(() async {
     await _repo.resetAttempt(_today);
     await _refresh();
-  }
+  });
 
-  Future<void> freshStart({required bool keepClips}) async {
+  Future<void> freshStart({required bool keepClips}) => _run(() async {
     // Task 8 wires deletion of the returned clip files.
     await _repo.freshStart(keepClips: keepClips);
     await _refresh();
-  }
+  });
 
   Future<void> markDay4Seen() =>
-      _setFlags((f) => f.copyWith(day4Celebrated: true));
+      _setFlags((f, _) => f.copyWith(day4Celebrated: true));
 
-  Future<void> markWeeklyReplaySeen() {
-    final day = _home?.dayNumber;
-    return _setFlags((f) => f.copyWith(lastWeeklyReplayDayNumber: day));
-  }
+  Future<void> markWeeklyReplaySeen() => _setFlags(
+    (f, home) => f.copyWith(lastWeeklyReplayDayNumber: home?.dayNumber),
+  );
 
   Future<void> setHomeStyle(HomeStyle s) =>
-      _setFlags((f) => f.copyWith(homeStyle: s));
+      _setFlags((f, _) => f.copyWith(homeStyle: s));
 
-  Future<void> _setFlags(Flags Function(Flags) change) async {
-    final s = _snapshot;
-    if (s == null) return;
-    await _repo.setFlags(change(s.flags));
-    await _refresh();
-  }
+  Future<void> _setFlags(Flags Function(Flags, HomeState?) change) =>
+      _run(() async {
+        final s = _snapshot;
+        if (s == null) return;
+        await _repo.setFlags(change(s.flags, _home));
+        await _refresh();
+      });
 }

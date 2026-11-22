@@ -9,9 +9,13 @@ import 'package:stick/domain/models.dart';
 class CountingSink implements ReminderSink {
   int reschedules = 0;
   bool permission = true;
+  bool throws = false;
 
   @override
-  Future<void> reschedule(Snapshot s, DateTime now) async => reschedules++;
+  Future<void> reschedule(Snapshot s, DateTime now) async {
+    reschedules++;
+    if (throws) throw StateError('boom');
+  }
 
   @override
   Future<bool> requestPermission() async => permission;
@@ -54,8 +58,10 @@ void main() {
     await c.open();
     expect(c.home!.paused, isTrue);
     expect(c.snapshot!.current.firstMissDay, 1);
-    now = DateTime(2026, 12, 1, 12);
+    // A later, longer gap must not overwrite the stored first miss.
+    now = DateTime(2026, 12, 20, 12);
     await c.open();
+    expect(c.home!.paused, isTrue);
     expect(c.snapshot!.current.firstMissDay, 1);
   });
 
@@ -110,5 +116,28 @@ void main() {
     );
     expect(c.snapshot!.habit.tiny, isNull);
     expect(c.snapshot!.habit.name, 'Walk');
+  });
+
+  test('a throwing reminder sink does not block setup or open', () async {
+    sink.throws = true;
+    await c.open();
+    expect(c.needsSetup, isTrue);
+    await setup();
+    expect(c.needsSetup, isFalse);
+    expect(c.home!.dayNumber, 1);
+    c = StickController(repo: repo, clock: () => now, reminders: sink);
+    await c.open();
+    expect(c.snapshot!.habit.name, 'Walk');
+    expect(c.loaded, isTrue);
+  });
+
+  test('open during a checkIn leaves consistent state', () async {
+    await setup();
+    now = DateTime(2026, 11, 21, 12);
+    await c.open();
+    await Future.wait([c.checkIn(), c.open(), c.checkIn(), c.open()]);
+    expect(c.snapshot!.currentCheckIns, hasLength(1));
+    expect(c.home!.dayNumber, 2);
+    expect(c.home!.checkedInToday, isTrue);
   });
 }

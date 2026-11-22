@@ -24,7 +24,12 @@ Future<void> main() async {
     clock: DateTime.now,
     reminders: NoopReminderSink(),
   );
-  await controller.open();
+  try {
+    await controller.open();
+  } catch (e) {
+    // Show setup/home anyway rather than a blank launch.
+    debugPrint('initial open failed: $e');
+  }
   runApp(_Lifecycle(controller: controller));
 }
 
@@ -52,7 +57,11 @@ class _LifecycleState extends State<_Lifecycle> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) widget.controller.open();
+    if (state == AppLifecycleState.resumed) {
+      widget.controller.open().catchError(
+        (Object e) => debugPrint('open on resume failed: $e'),
+      );
+    }
   }
 
   @override
