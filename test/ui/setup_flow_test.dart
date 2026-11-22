@@ -41,6 +41,7 @@ void main() {
     FakeSink sink, {
     ClipRecorder? recorder,
     ClipFiles? files,
+    String manufacturer = 'Google',
   }) async {
     final c = StickController(
       repo: StickRepository(db),
@@ -51,7 +52,11 @@ void main() {
     await t.pumpWidget(
       StickScope(
         controller: c,
-        child: StickApp(recorder: recorder, files: files),
+        child: StickApp(
+          recorder: recorder,
+          files: files,
+          manufacturer: () async => manufacturer,
+        ),
       ),
     );
     return c;
@@ -84,6 +89,36 @@ void main() {
     expect(find.text('Why are you starting?'), findsOneWidget);
     expect(find.text('19:00'), findsOneWidget);
   });
+
+  for (final brand in ['Xiaomi', 'Google']) {
+    testWidgets('battery tip after setup only on listed brands ($brand)', (
+      t,
+    ) async {
+      final c = await pump(t, FakeSink(true), manufacturer: brand);
+      await t.enterText(find.byType(TextField), 'Walk');
+      await t.pump();
+      await t.tap(find.text('Next'));
+      await t.pump();
+      await t.tap(find.text('Next'));
+      await t.pump();
+      await t.enterText(find.byType(TextField), 'Head clear');
+      await t.pump();
+      await t.runAsync(() async {
+        final done = Completer<void>();
+        c.addListener(() {
+          if (!c.needsSetup && !done.isCompleted) done.complete();
+        });
+        await t.tap(find.text('Start'));
+        await done.future.timeout(const Duration(seconds: 5));
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      });
+      await t.pumpAndSettle();
+      expect(
+        find.text('Keep reminders working'),
+        brand == 'Xiaomi' ? findsOneWidget : findsNothing,
+      );
+    });
+  }
 
   for (final granted in [true, false]) {
     testWidgets('finishes setup, permission granted=$granted', (t) async {

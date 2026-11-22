@@ -135,6 +135,28 @@ class StickController extends ChangeNotifier {
     await _refresh();
   });
 
+  /// Edits the habit after setup. Changing the reminder time re-plans the
+  /// reminders, because every op ends in [_refresh].
+  Future<void> updateHabit({
+    required String name,
+    String? tiny,
+    required String why,
+    required int reminderMinutes,
+  }) => _run(() async {
+    final s = _snapshot;
+    if (s == null) return;
+    final t = tiny?.trim();
+    await _repo.updateHabit(
+      s.habit.copyWith(
+        name: name.trim(),
+        tiny: (t == null || t.isEmpty) ? null : t,
+        why: why.trim(),
+        reminderMinutes: reminderMinutes,
+      ),
+    );
+    await _refresh();
+  });
+
   Future<bool> requestNotificationPermission() =>
       _reminders.requestPermission();
 

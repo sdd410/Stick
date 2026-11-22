@@ -5,6 +5,7 @@ import '../../controller/stick_scope.dart';
 import '../../domain/habit_engine.dart';
 import '../../domain/models.dart';
 import '../../theme.dart';
+import '../celebration/day4_screen.dart';
 import 'home_big_number.dart';
 import 'home_road.dart';
 
@@ -54,6 +55,21 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // Day 4 screen is open or about to be; blocks a second push.
+  bool _day4Open = false;
+
+  Future<void> _checkIn(StickController c) async {
+    await c.checkIn();
+    if (!mounted || _day4Open || c.home?.showDay4 != true) return;
+    _day4Open = true;
+    try {
+      await Navigator.of(context)
+          .push<void>(MaterialPageRoute(builder: (_) => const Day4Screen()));
+    } finally {
+      _day4Open = false;
+    }
+  }
+
   Future<void> _guarded(Future<void> Function() op) async {
     if (_busy) return;
     setState(() => _busy = true);
@@ -101,7 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onButton = null;
     } else {
       buttonLabel = 'Done today';
-      onButton = _busy ? null : () => _guarded(c.checkIn);
+      onButton = _busy ? null : () => _guarded(() => _checkIn(c));
     }
 
     final showRescue = inRescue && !home.paused;

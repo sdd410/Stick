@@ -109,6 +109,21 @@ void main() {
     expect(c.snapshot!.flags.homeStyle, HomeStyle.road);
   });
 
+  test('changing reminder time reschedules', () async {
+    await setup();
+    final before = sink.reschedules;
+    await c.updateHabit(
+      name: 'Walk',
+      tiny: null,
+      why: 'Head',
+      reminderMinutes: 480,
+    );
+    expect(sink.reschedules, before + 1);
+    expect(sink.last!.habit.reminderMinutes, 480);
+    expect(c.snapshot!.habit.tiny, isNull);
+    expect(c.snapshot!.habit.createdAt, DateTime(2026, 11, 20, 12));
+  });
+
   test('freshStart returns to setup', () async {
     await setup();
     await c.freshStart(keepClips: false);
