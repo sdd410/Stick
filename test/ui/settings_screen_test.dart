@@ -113,6 +113,17 @@ void main() {
     await t.pumpAndSettle();
   }
 
+  testWidgets('list keeps clear of the navigation bar inset', (t) async {
+    t.view.devicePixelRatio = 1;
+    t.view.padding = const FakeViewPadding(bottom: 40);
+    t.view.viewPadding = const FakeViewPadding(bottom: 40);
+    addTearDown(t.view.reset);
+    await seed(t);
+    await pump(t);
+    final list = t.widget<ListView>(find.byType(ListView));
+    expect(list.padding!.resolve(TextDirection.ltr).bottom, 24 + 40);
+  });
+
   testWidgets('changing reminder time reschedules', (t) async {
     await seed(t);
     await pump(t);

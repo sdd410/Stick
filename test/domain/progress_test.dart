@@ -138,4 +138,36 @@ void main() {
     expect(p.tinyDays, 1);
     expect(p.clipCount, 0);
   });
+
+  test('tiny days counts each calendar day once', () {
+    final p = computeProgress(
+      snap(
+        ended: [a1.copyWith(finalDay: 2)],
+        current: a2,
+        checkIns: [
+          ci('2026-11-10', 1, tiny: true),
+          ci('2026-11-10', 2, tiny: true), // reset and checked in the same day
+          ci('2026-11-11', 2, tiny: true),
+        ],
+      ),
+      home(2, 3, 6),
+    );
+    expect(p.tinyDays, 2);
+  });
+
+  test('an ended attempt without finalDay uses check-ins + 1', () {
+    final p = computeProgress(
+      snap(
+        ended: [a1.copyWith(finalDay: null)],
+        current: a2,
+        checkIns: [
+          ci('2026-11-01', 1),
+          ci('2026-11-02', 1),
+          ci('2026-11-03', 1),
+        ],
+      ),
+      home(2, 1, 6),
+    );
+    expect(p.bars.first.length, 4);
+  });
 }

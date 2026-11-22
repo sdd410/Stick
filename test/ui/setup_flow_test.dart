@@ -90,6 +90,40 @@ void main() {
     expect(find.text('19:00'), findsOneWidget);
   });
 
+  testWidgets('system back on step 2 goes to step 1, not out of the app', (
+    t,
+  ) async {
+    await pump(t, FakeSink(true));
+    await t.enterText(find.byType(TextField), 'Walk');
+    await t.pump();
+    await t.tap(find.text('Next'));
+    await t.pump();
+    expect(find.text('Step 2 of 3'), findsOneWidget);
+    await t.binding.handlePopRoute();
+    await t.pump();
+    expect(find.text('Step 1 of 3'), findsOneWidget);
+    // Name is kept.
+    expect(find.text('Walk'), findsOneWidget);
+  });
+
+  testWidgets('step 3 survives a big font and the keyboard inset', (t) async {
+    t.view.physicalSize = const Size(800, 900);
+    t.view.devicePixelRatio = 2;
+    addTearDown(t.view.reset);
+    await pump(t, FakeSink(true));
+    await t.enterText(find.byType(TextField), 'Walk');
+    await t.pump();
+    await t.tap(find.text('Next'));
+    await t.pump();
+    await t.tap(find.text('Next'));
+    await t.pump();
+    t.view.viewInsets = const FakeViewPadding(bottom: 500);
+    addTearDown(t.view.resetViewInsets);
+    await t.pump();
+    expect(t.takeException(), isNull);
+    expect(find.text('Why are you starting?'), findsOneWidget);
+  });
+
   for (final brand in ['Xiaomi', 'Google']) {
     testWidgets('battery tip after setup only on listed brands ($brand)', (
       t,

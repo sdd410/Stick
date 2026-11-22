@@ -85,15 +85,45 @@ class _SetupFlowState extends State<SetupFlow> {
     widget.onFinished?.call();
   }
 
+  /// System back: step 2 and 3 go to the previous step, the first-clip offer
+  /// counts as Skip, and the first step leaves the app.
+  void _onBack() {
+    if (_starting) return;
+    if (_step == 3) {
+      widget.onFinished?.call();
+    } else if (_step > 0) {
+      setState(() => _step--);
+    }
+  }
+
+  /// Fills the screen when short, scrolls when the keyboard or a big font
+  /// leaves too little room.
+  Widget _scrollable(Widget child) => LayoutBuilder(
+    builder: (context, constraints) => SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: constraints.maxHeight - 48),
+        child: IntrinsicHeight(child: child),
+      ),
+    ),
+  );
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => PopScope(
+    canPop: _step == 0 && !_starting,
+    onPopInvokedWithResult: (didPop, _) {
+      if (!didPop) _onBack();
+    },
+    child: _buildStep(context),
+  );
+
+  Widget _buildStep(BuildContext context) {
     final theme = Theme.of(context);
     if (_step == 3) {
       return Scaffold(
         body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
+          child: _scrollable(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Spacer(),
@@ -157,9 +187,8 @@ class _SetupFlowState extends State<SetupFlow> {
     final last = _step == 2;
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
+        child: _scrollable(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(

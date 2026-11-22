@@ -39,8 +39,10 @@ Progress computeProgress(Snapshot s, HomeState h) {
   final bars = <AttemptBar>[];
   final ended = [...s.ended]..sort((a, b) => a.number.compareTo(b.number));
   for (final a in ended) {
+    // Same rule as finalDayOf: the day it stopped on is check-ins + 1.
     final length =
-        a.finalDay ?? s.allCheckIns.where((c) => c.attempt == a.number).length;
+        a.finalDay ??
+        s.allCheckIns.where((c) => c.attempt == a.number).length + 1;
     bars.add(
       AttemptBar(
         number: a.number,
@@ -62,7 +64,11 @@ Progress computeProgress(Snapshot s, HomeState h) {
     daysShowedUp: s.allCheckIns.map((c) => c.day).toSet().length,
     bars: bars,
     quitDaysBeaten: bars.where((b) => b.beatQuitDay).length,
-    tinyDays: s.allCheckIns.where((c) => c.tiny).length,
+    tinyDays: s.allCheckIns
+        .where((c) => c.tiny)
+        .map((c) => c.day)
+        .toSet()
+        .length,
     clipCount: s.clips.length,
     nextQuitTarget: h.quitTarget,
   );
