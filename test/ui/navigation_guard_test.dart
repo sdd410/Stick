@@ -14,7 +14,6 @@ import 'package:stick/services/clip_files.dart';
 import 'package:stick/services/clip_recorder.dart';
 import 'package:stick/ui/progress/progress_screen.dart';
 import 'package:stick/ui/record/record_screen.dart';
-import 'package:stick/ui/settings/settings_screen.dart';
 
 class _Recorder implements ClipRecorder {
   @override
@@ -71,16 +70,7 @@ void main() {
     );
   }
 
-  testWidgets('double tap on the settings gear opens one screen', (t) async {
-    await pump(t);
-    final gear = t.widget<IconButton>(find.byType(IconButton));
-    gear.onPressed!(); // two taps inside one frame
-    gear.onPressed!();
-    await t.pumpAndSettle();
-    expect(find.byType(SettingsScreen, skipOffstage: false), findsOneWidget);
-  });
-
-  testWidgets('double tap on the counter opens one Progress screen', (t) async {
+  testWidgets('double tap on the counter shows one Progress screen', (t) async {
     await pump(t);
     final counter = t.widget<InkWell>(
       find.ancestor(
@@ -94,25 +84,28 @@ void main() {
     expect(find.byType(ProgressScreen, skipOffstage: false), findsOneWidget);
   });
 
-  testWidgets('double tap on Add a message opens one record screen', (t) async {
-    await pump(t);
-    final add = t.widget<TextButton>(
-      find.widgetWithText(TextButton, 'Add a message'),
+  Future<void> messagesTab(WidgetTester t) async {
+    await t.tap(
+      find.descendant(
+        of: find.byType(NavigationBar),
+        matching: find.text('Messages'),
+      ),
     );
-    add.onPressed!();
-    add.onPressed!();
     await t.pumpAndSettle();
-    expect(find.byType(RecordScreen, skipOffstage: false), findsOneWidget);
-  });
+  }
 
-  testWidgets('the button works again after the screen is closed', (t) async {
+  testWidgets('the record button works again after the screen is closed', (
+    t,
+  ) async {
     await pump(t);
-    await t.tap(find.byIcon(Icons.settings_outlined));
+    await messagesTab(t);
+    await t.tap(find.byType(FloatingActionButton));
     await t.pumpAndSettle();
+    expect(find.byType(RecordScreen), findsOneWidget);
     await t.pageBack();
     await t.pumpAndSettle();
-    await t.tap(find.byIcon(Icons.settings_outlined));
+    await t.tap(find.byType(FloatingActionButton));
     await t.pumpAndSettle();
-    expect(find.byType(SettingsScreen), findsOneWidget);
+    expect(find.byType(RecordScreen), findsOneWidget);
   });
 }

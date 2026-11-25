@@ -7,7 +7,11 @@ import '../../domain/progress.dart';
 import '../../theme.dart';
 
 class ProgressScreen extends StatelessWidget {
-  const ProgressScreen({super.key, this.onOpenReplay});
+  const ProgressScreen({super.key, this.onOpenReplay, this.onBack});
+
+  /// The bottom button; defaults to closing the screen. As a tab it goes
+  /// back to the Home tab.
+  final VoidCallback? onBack;
 
   /// Opens the replay. The "Messages to future you" block shows only when
   /// there are clips and this is set.
@@ -166,7 +170,7 @@ class ProgressScreen extends StatelessWidget {
             ],
             const SizedBox(height: 32),
             FilledButton(
-              onPressed: () => Navigator.of(context).maybePop(),
+              onPressed: onBack ?? () => Navigator.of(context).maybePop(),
               style: FilledButton.styleFrom(
                 minimumSize: const Size.fromHeight(60),
               ),

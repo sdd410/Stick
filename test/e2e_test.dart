@@ -171,7 +171,12 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.text('Start new attempt'));
     await settle(t);
-    await t.pageBack();
+    await t.tap(
+      find.descendant(
+        of: find.byType(NavigationBar),
+        matching: find.text('Home'),
+      ),
+    );
     await t.pumpAndSettle();
     expect(c.home!.attemptNumber, 2);
     expect(c.home!.quitTarget, 4);

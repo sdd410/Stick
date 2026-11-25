@@ -216,6 +216,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onSelectionChanged: (s) => c.setHomeStyle(s.first),
             ),
           ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text('Check-in', style: TextStyle(color: StickColors.muted)),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: SegmentedButton<CheckInMode>(
+              segments: const [
+                ButtonSegment(value: CheckInMode.slide, label: Text('Slide')),
+                ButtonSegment(value: CheckInMode.tap, label: Text('Tap')),
+              ],
+              selected: {snap.flags.checkInMode},
+              onSelectionChanged: (s) => c.setCheckInMode(s.first),
+            ),
+          ),
           if (_tip != null)
             Padding(
               padding: const EdgeInsets.all(16),

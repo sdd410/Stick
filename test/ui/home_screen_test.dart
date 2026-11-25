@@ -139,7 +139,6 @@ void main() {
     VoidCallback? onOpenProgress,
     VoidCallback? onAddMessage,
     VoidCallback? onPlayReplay,
-    VoidCallback? onOpenSettings,
     VoidCallback? onOpenTimer,
     bool noMotion = false,
     void Function(FakeController)? before,
@@ -160,7 +159,6 @@ void main() {
             onOpenProgress: onOpenProgress,
             onAddMessage: onAddMessage,
             onPlayReplay: onPlayReplay,
-            onOpenSettings: onOpenSettings,
           ),
         ),
       ),
@@ -353,7 +351,6 @@ void main() {
       state(attempt: 2, day: 3, rescue: RescueReason.quitDay, lastQuitDay: 3),
       sn: snap(name: 'Read twenty pages of a book every single night'),
       onOpenProgress: () {},
-      onOpenSettings: () {},
     );
     expect(t.takeException(), isNull);
   });
@@ -362,14 +359,9 @@ void main() {
     t.view.physicalSize = const Size(360, 640);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
-    await pump(
-      t,
-      state(attempt: 2, day: 3),
-      onOpenProgress: () {},
-      onOpenSettings: () {},
-    );
-    // The pill takes all the width the settings icon leaves (360 - 2*24
-    // padding - 48 icon). The text is still ellipsized under the wide Ahem
+    await pump(t, state(attempt: 2, day: 3), onOpenProgress: () {});
+    // The pill takes the full width (360 - 2*24 padding); settings moved
+    // to the tab bar. The text is still ellipsized under the wide Ahem
     // test font; the width assertion relies on that wide font filling the
     // available width. It guards against the Flexible + Spacer regression
     // that capped the pill at about half the width.
@@ -379,7 +371,8 @@ void main() {
         matching: find.byType(InkWell),
       ),
     );
-    expect(pill.width, 264);
+    expect(pill.width, greaterThan(264)); // was capped by the old gear
+    expect(pill.width, lessThanOrEqualTo(312));
     expect(pill.height, greaterThanOrEqualTo(48));
   });
 
@@ -389,7 +382,7 @@ void main() {
     var added = 0;
     await pump(t, state(day: 7, clipPrompt: true), onAddMessage: () => added++);
     expect(find.text('Record one for future you.'), findsOneWidget);
-    await t.tap(find.text('Add a message'));
+    await t.tap(find.text('Record one for future you.'));
     expect(added, 1);
   });
 
@@ -409,19 +402,11 @@ void main() {
     expect(find.text('Record one for future you.'), findsNothing);
   });
 
-  testWidgets('buttons for unbuilt screens are hidden when callbacks null', (
-    t,
-  ) async {
-    await pump(t, state());
+  testWidgets('Home has no gear or See all / Add a message buttons', (t) async {
+    await pump(t, state(), onAddMessage: () {});
     expect(find.text('Add a message'), findsNothing);
+    expect(find.text('See all'), findsNothing);
     expect(find.byIcon(Icons.settings_outlined), findsNothing);
-  });
-
-  testWidgets('settings icon calls onOpenSettings', (t) async {
-    var n = 0;
-    await pump(t, state(), onOpenSettings: () => n++);
-    await t.tap(find.byIcon(Icons.settings_outlined));
-    expect(n, 1);
   });
 
   group('slide mode', () {

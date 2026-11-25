@@ -20,6 +20,7 @@ import 'ui/record/record_screen.dart';
 import 'ui/settings/battery_tip_card.dart';
 import 'ui/settings/settings_screen.dart';
 import 'ui/setup/setup_flow.dart';
+import 'ui/shell/home_shell.dart';
 
 /// Opens the story-style replay. Task 10 (notification) and Task 12 (fresh
 /// start) call this. Pass [clips] to play specific ones instead of the pick.
@@ -115,6 +116,15 @@ class _RootState extends State<_Root> {
   // Setup stays on screen after the habit exists, for the optional first clip.
   bool _inSetup = false;
 
+  /// The selected bottom tab (0 = Home).
+  final _tab = ValueNotifier<int>(0);
+
+  @override
+  void dispose() {
+    _tab.dispose();
+    super.dispose();
+  }
+
   // Buttons whose pushed screen is still open; a second tap is ignored.
   final _open = <String>{};
 
@@ -139,37 +149,6 @@ class _RootState extends State<_Root> {
     ),
   );
 
-  void _openClipList() {
-    final files = widget.files!;
-    Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        builder: (ctx) => ClipListScreen(
-          onPlay: (clip) => openReplay(ctx, files: files, clips: [clip]),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _openSettings() {
-    final files = widget.files;
-    return _once(
-      'settings',
-      () => Navigator.of(context).push<void>(
-        MaterialPageRoute(
-          builder: (ctx) => SettingsScreen(
-            readManufacturer: widget.manufacturer,
-            openSystemSettings: widget.openSystemSettings,
-            onManageClips: files == null ? null : _openClipList,
-            onPlayReplay: files == null
-                ? null
-                : (headline) =>
-                      openReplay(ctx, files: files, headline: headline),
-          ),
-        ),
-      ),
-    );
-  }
-
   /// Once, right after setup, on phones that kill background reminders.
   Future<void> _maybeShowBatteryTip() async {
     String maker;
@@ -185,22 +164,6 @@ class _RootState extends State<_Root> {
       ctx,
       tip: tip,
       openSystemSettings: widget.openSystemSettings,
-    );
-  }
-
-  Future<void> _openProgress() {
-    final files = widget.files;
-    return _once(
-      'progress',
-      () => Navigator.of(context).push<void>(
-        MaterialPageRoute(
-          builder: (ctx) => ProgressScreen(
-            onOpenReplay: files == null
-                ? null
-                : () => openReplay(ctx, files: files),
-          ),
-        ),
-      ),
     );
   }
 
@@ -222,19 +185,43 @@ class _RootState extends State<_Root> {
       return SetupFlow(
         onRecordFirstClip: _canRecord ? _openRecord : null,
         onFinished: () {
+          _tab.value = 0;
           setState(() => _inSetup = false);
           _maybeShowBatteryTip();
         },
       );
     }
-    return HomeScreen(
-      onOpenProgress: _openProgress,
-      onOpenSettings: _openSettings,
-      onAddMessage: _canRecord ? _openRecord : null,
-      onPlayReplay: widget.files == null
-          ? null
-          : () => openReplay(context, files: widget.files!),
-      onSeeAll: widget.files == null ? null : _openClipList,
+    final files = widget.files;
+    void replay() {
+      if (files != null) openReplay(context, files: files);
+    }
+
+    return HomeShell(
+      tab: _tab,
+      home: HomeScreen(
+        onOpenProgress: () => _tab.value = 1,
+        onAddMessage: _canRecord ? _openRecord : null,
+        onPlayReplay: files == null ? null : replay,
+      ),
+      progress: ProgressScreen(
+        onOpenReplay: files == null ? null : replay,
+        onBack: () => _tab.value = 0,
+      ),
+      messages: ClipListScreen(
+        onPlay: (clip) {
+          if (files != null) openReplay(context, files: files, clips: [clip]);
+        },
+        onPlayAll: files == null ? null : replay,
+        onAddMessage: _canRecord ? _openRecord : null,
+      ),
+      settings: SettingsScreen(
+        readManufacturer: widget.manufacturer,
+        openSystemSettings: widget.openSystemSettings,
+        onPlayReplay: files == null
+            ? null
+            : (headline) =>
+                  openReplay(context, files: files, headline: headline),
+      ),
     );
   }
 }

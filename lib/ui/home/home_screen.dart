@@ -26,17 +26,15 @@ class HomeScreen extends StatefulWidget {
     this.onOpenProgress,
     this.onAddMessage,
     this.onPlayReplay,
-    this.onSeeAll,
-    this.onOpenSettings,
     this.onOpenTimer,
   });
 
   /// Null until the matching screen exists; the control is then hidden.
   final VoidCallback? onOpenProgress;
+
+  /// The "Record one for future you." banner on day 7, 14 and 21.
   final VoidCallback? onAddMessage;
   final VoidCallback? onPlayReplay;
-  final VoidCallback? onSeeAll;
-  final VoidCallback? onOpenSettings;
 
   /// Opens the 2-minute tiny-version timer.
   final VoidCallback? onOpenTimer;
@@ -237,17 +235,6 @@ class _HomeScreenState extends State<HomeScreen>
                         ),
                       ),
                     ),
-                    if (hasClips && widget.onSeeAll != null)
-                      TextButton(
-                        onPressed: widget.onSeeAll,
-                        child: const Text('See all'),
-                      ),
-                    if (widget.onAddMessage != null)
-                      TextButton(
-                        onPressed: widget.onAddMessage,
-                        child: const Text('Add a message'),
-                      ),
-                    const SizedBox(height: 8),
                     _checkInControl(c, home, snap.flags.checkInMode),
                   ],
                 ),
@@ -319,13 +306,6 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
           ),
         ),
-        if (widget.onOpenSettings != null)
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            color: StickColors.muted,
-            tooltip: 'Settings',
-            onPressed: widget.onOpenSettings,
-          ),
       ],
     );
   }
