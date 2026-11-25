@@ -200,6 +200,21 @@ void main() {
     expect(c.snapshot!.habit.reminderMinutes, 19 * 60);
   });
 
+  testWidgets('a double tap does not reach the next step', (t) async {
+    await pump(t);
+    await toWhy(t);
+    await tap(t, 'Continue');
+    await tap(t, 'Continue');
+    await settle(t);
+    final at = t.getCenter(find.text('Got it'));
+    await t.tapAt(at);
+    await t.pump(const Duration(milliseconds: 60));
+    await t.tapAt(at); // lands where "I promise" will be
+    await settle(t);
+    expect(find.text('Walk every day'), findsOneWidget);
+    expect(c.needsSetup, isTrue);
+  });
+
   testWidgets('a permission error does not block setup', (t) async {
     await pump(t, sinkThrows: true);
     await toWhy(t);

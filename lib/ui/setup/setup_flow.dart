@@ -125,6 +125,16 @@ class _SetupFlowState extends State<SetupFlow> {
     },
     child: AnimatedSwitcher(
       duration: const Duration(milliseconds: 200),
+      // No taps until a step has fully faded in: the big buttons share one
+      // spot, so a double tap would otherwise hit the next step's button.
+      transitionBuilder: (child, animation) => AnimatedBuilder(
+        animation: animation,
+        builder: (_, child) => IgnorePointer(
+          ignoring: animation.status != AnimationStatus.completed,
+          child: child,
+        ),
+        child: FadeTransition(opacity: animation, child: child),
+      ),
       child: KeyedSubtree(key: ValueKey(_step), child: _buildStep(context)),
     ),
   );
