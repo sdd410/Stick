@@ -348,7 +348,7 @@ class _SetupFlowState extends State<SetupFlow> {
   );
 
   Widget _wallStep(BuildContext context) => StepScaffold(
-    title: 'Day 3 is the wall.',
+    title: wallTitle(_quitDay),
     highlight: 'wall',
     progress: _progress,
     onBack: _back,
@@ -357,7 +357,7 @@ class _SetupFlowState extends State<SetupFlow> {
     body: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const WallChart(),
+        WallChart(quitDay: firstQuitTarget(_quitDay)),
         const SizedBox(height: 16),
         Text(
           wallLine(_quitDay),
@@ -444,8 +444,9 @@ class _SetupFlowState extends State<SetupFlow> {
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Say it out loud. Future you will hear it on day 3.',
+            Text(
+              'Say it out loud. Future you will hear it on day '
+              '${firstQuitTarget(_quitDay)}.',
               textAlign: TextAlign.center,
               style: TextStyle(color: StickColors.muted),
             ),

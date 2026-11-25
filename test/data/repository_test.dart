@@ -51,6 +51,19 @@ void main() {
     expect(h.quizReason, isNull);
   });
 
+  test('the quiz answer sets attempt 1 quit target', () async {
+    await repo.createHabit(
+      _habit.copyWith(quizQuitDay: QuitDayAnswer.weekOrTwo),
+      '2026-11-20',
+    );
+    expect((await repo.load())!.current.quitTarget, 7);
+    await repo.createHabit(
+      _habit.copyWith(quizQuitDay: QuitDayAnswer.day2),
+      '2026-11-21',
+    );
+    expect((await repo.load())!.current.quitTarget, 2);
+  });
+
   test('createHabit makes attempt 1 with quitTarget 3', () async {
     await repo.createHabit(_habit, '2026-11-20');
     final s = (await repo.load())!;

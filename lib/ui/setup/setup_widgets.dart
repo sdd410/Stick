@@ -255,22 +255,26 @@ class ChoiceCard extends StatelessWidget {
   );
 }
 
-/// The "Day 3 is the wall" drawing: motivation drops to day 3, then rises.
+/// The "Day N is the wall" drawing: motivation drops to day N, then rises.
 class WallChart extends StatelessWidget {
-  const WallChart({super.key});
+  const WallChart({super.key, this.quitDay = 3});
+
+  final int quitDay;
 
   @override
   Widget build(BuildContext context) => Semantics(
-    label: 'Motivation drops until day 3, then gets easier',
-    child: const AspectRatio(
+    label: 'Motivation drops until day $quitDay, then gets easier',
+    child: AspectRatio(
       aspectRatio: 316 / 250,
-      child: CustomPaint(painter: _WallPainter()),
+      child: CustomPaint(painter: _WallPainter(quitDay)),
     ),
   );
 }
 
 class _WallPainter extends CustomPainter {
-  const _WallPainter();
+  const _WallPainter(this.quitDay);
+
+  final int quitDay;
 
   static const _red = Color(0xFFFF5A5A);
 
@@ -320,10 +324,11 @@ class _WallPainter extends CustomPainter {
     }
 
     label('motivation', p(20, 26), StickColors.muted);
-    label('Day 3', p(124, 226), const Color(0xFFFF8A8A), center: true);
-    label('Day 4 → easier', p(182, 166), StickColors.lime);
+    label('Day $quitDay', p(124, 226), const Color(0xFFFF8A8A), center: true);
+    label('Day ${quitDay + 1} → easier', p(182, 166), StickColors.lime);
   }
 
   @override
-  bool shouldRepaint(covariant _WallPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _WallPainter oldDelegate) =>
+      oldDelegate.quitDay != quitDay;
 }

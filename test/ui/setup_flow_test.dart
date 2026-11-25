@@ -141,6 +141,28 @@ void main() {
     expect(finished, 1);
   });
 
+  testWidgets('the wall and the promise use the quiz day', (t) async {
+    await pump(t, canRecord: true);
+    await tap(t, 'Start');
+    await tap(t, 'Day 2');
+    await tap(t, 'Continue');
+    await tap(t, 'Skip');
+    await tap(t, 'Walk');
+    await tap(t, 'Continue');
+    await tap(t, 'Continue');
+    await tap(t, 'Continue');
+    await settle(t);
+    expect(find.textContaining('Day 2 is the'), findsOneWidget);
+    await tap(t, 'Got it');
+    expect(
+      find.text('Say it out loud. Future you will hear it on day 2.'),
+      findsOneWidget,
+    );
+    await tap(t, 'Skip recording');
+    await settle(t);
+    expect(c.snapshot!.current.quitTarget, 2);
+  });
+
   testWidgets('quiz Continue waits for an answer', (t) async {
     await pump(t);
     await tap(t, 'Start');

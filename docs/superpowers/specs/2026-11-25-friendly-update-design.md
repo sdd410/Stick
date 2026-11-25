@@ -85,6 +85,9 @@ Data: store `emoji`, `templateId` (nullable), `quizQuitDay` (nullable), `quizRea
 
 Before release: `versionCode` 2, one set of Play release notes, the device checklist in `TESTING.md` on the Android 16 emulator, the Android 8 emulator and a real phone. A release build is made only when the user asks.
 
+## Quit day from the quiz (decided 25 Nov 2026, replaces decision 1 below)
+The answer to "When do you usually quit?" sets the **first attempt's quit day**, used for both the Progress button ("Get past Day N this time") and the rescue screen: Day 1 → 1, Day 2 → 2, Day 3 → 3, After a week or two → 7, Not sure / skipped → 3. After the first miss, the learned quit day takes over as before. The "Day N is the wall" screen, its chart and "Future you will hear it on day N" use the same N.
+
 ## Decisions (confirmed by the user, 25 Nov 2026)
 These touch features already decided in `stick-mvp.md`:
 1. **Quit day from the quiz.** Decided rule: the quit day is learned from the first miss, not asked. Proposal: the quiz answer is used **only for wording**; the rescue still triggers on day 3 by default and then on the learned day. (Alternative: use the quiz answer as the rescue day until the first miss.)

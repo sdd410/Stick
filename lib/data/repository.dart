@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../domain/day_clock.dart';
 import '../domain/habit_engine.dart';
+import '../domain/onboarding.dart' show firstQuitTarget;
 import '../domain/models.dart';
 import 'database.dart' as db;
 
@@ -182,7 +183,7 @@ class StickRepository {
           db.AttemptsCompanion.insert(
             number: const Value(1),
             startDay: today,
-            quitTarget: 3,
+            quitTarget: firstQuitTarget(h.quizQuitDay),
           ),
         );
     await _db

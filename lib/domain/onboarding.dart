@@ -164,6 +164,19 @@ String wallLine(QuitDayAnswer? a) {
   return '$first Stick will be ready.';
 }
 
+/// The first attempt's quit day (Progress "Get past Day N" and the rescue
+/// day) from "When do you usually quit?". After the first miss the learned
+/// day takes over.
+int firstQuitTarget(QuitDayAnswer? a) => switch (a) {
+  QuitDayAnswer.day1 => 1,
+  QuitDayAnswer.day2 => 2,
+  QuitDayAnswer.day3 => 3,
+  QuitDayAnswer.weekOrTwo => 7,
+  QuitDayAnswer.notSure || null => 3,
+};
+
+String wallTitle(QuitDayAnswer? a) => 'Day ${firstQuitTarget(a)} is the wall.';
+
 List<String> promiseLines({
   required String name,
   String? tiny,
@@ -171,11 +184,7 @@ List<String> promiseLines({
 }) {
   final t = tiny?.trim();
   final small = (t == null || t.isEmpty) ? 'Show up for 2 minutes' : t;
-  final day = switch (quitDay) {
-    QuitDayAnswer.day1 => 1,
-    QuitDayAnswer.day2 => 2,
-    _ => 3,
-  };
+  final day = firstQuitTarget(quitDay);
   return [
     '${name.trim()} every day',
     'On bad days, just ${_lowerFirst(small)}',

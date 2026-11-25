@@ -101,6 +101,14 @@ void main() {
     expect(find.byIcon(Icons.check), findsOneWidget);
   });
 
+  testWidgets('WallChart follows the quit day', (t) async {
+    await t.pumpWidget(_app(const Scaffold(body: WallChart(quitDay: 7))));
+    expect(
+      find.bySemanticsLabel('Motivation drops until day 7, then gets easier'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('WallChart paints and has a description', (t) async {
     await t.pumpWidget(_app(const Scaffold(body: WallChart())));
     expect(

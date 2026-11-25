@@ -67,7 +67,7 @@ void main() {
     );
     expect(lines[0], 'Read every day');
     expect(lines[1], 'On bad days, just show up for 2 minutes');
-    expect(lines[2], contains('day 3'));
+    expect(lines[2], contains('day 7')); // a week or two → day 7
   });
 
   test('reasonHint', () {
@@ -81,5 +81,20 @@ void main() {
     );
     expect(reasonHint(QuitReason.notSure), isNull);
     expect(reasonHint(null), isNull);
+  });
+
+  test('firstQuitTarget maps the quiz answer, falling back to 3', () {
+    expect(firstQuitTarget(QuitDayAnswer.day1), 1);
+    expect(firstQuitTarget(QuitDayAnswer.day2), 2);
+    expect(firstQuitTarget(QuitDayAnswer.day3), 3);
+    expect(firstQuitTarget(QuitDayAnswer.weekOrTwo), 7);
+    expect(firstQuitTarget(QuitDayAnswer.notSure), 3);
+    expect(firstQuitTarget(null), 3);
+  });
+
+  test('wallTitle names the quit day', () {
+    expect(wallTitle(QuitDayAnswer.day2), 'Day 2 is the wall.');
+    expect(wallTitle(QuitDayAnswer.weekOrTwo), 'Day 7 is the wall.');
+    expect(wallTitle(null), 'Day 3 is the wall.');
   });
 }
