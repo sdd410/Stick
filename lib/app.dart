@@ -21,6 +21,7 @@ import 'ui/settings/battery_tip_card.dart';
 import 'ui/settings/settings_screen.dart';
 import 'ui/setup/setup_flow.dart';
 import 'ui/shell/home_shell.dart';
+import 'ui/timer/tiny_timer_screen.dart';
 
 /// Opens the story-style replay. Task 10 (notification) and Task 12 (fresh
 /// start) call this. Pass [clips] to play specific ones instead of the pick.
@@ -149,6 +150,26 @@ class _RootState extends State<_Root> {
     ),
   );
 
+  /// The 2-minute tiny-version timer; finishing it checks the day in.
+  Future<void> _openTimer() => _once('timer', () {
+    final c = StickScope.of(context);
+    final habit = c.snapshot?.habit;
+    if (habit == null) return Future<void>.value();
+    final t = habit.tiny?.trim();
+    return Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => TinyTimerScreen(
+          emoji: habit.emoji,
+          name: habit.name,
+          tinyText: (t == null || t.isEmpty) ? 'Show up for 2 minutes' : t,
+          onComplete: () async {
+            if (c.home?.checkedInToday == false) await c.checkIn();
+          },
+        ),
+      ),
+    );
+  });
+
   /// Once, right after setup, on phones that kill background reminders.
   Future<void> _maybeShowBatteryTip() async {
     String maker;
@@ -200,6 +221,7 @@ class _RootState extends State<_Root> {
       tab: _tab,
       home: HomeScreen(
         onOpenProgress: () => _tab.value = 1,
+        onOpenTimer: _openTimer,
         onAddMessage: _canRecord ? _openRecord : null,
         onPlayReplay: files == null ? null : replay,
       ),
