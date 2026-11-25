@@ -182,81 +182,97 @@ class _HomeScreenState extends State<HomeScreen>
       body: SafeArea(
         child: Stack(
           children: [
-            CustomScrollView(
-              slivers: [
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _topRow(home),
-                        const SizedBox(height: 16),
-                        WeekStripView(
-                          days: weekStrip(
-                            c.today,
-                            snap.allCheckIns.map((x) => x.day),
-                          ),
-                        ),
-                        if (showBanner)
-                          InkWell(
-                            onTap: widget.onAddMessage,
-                            borderRadius: BorderRadius.circular(16),
-                            child: Container(
-                              margin: const EdgeInsets.only(top: 16),
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: StickColors.lime),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: const Text(
-                                'Record one for future you.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  fontVariations: [FontVariation('wght', 600)],
+            Column(
+              children: [
+                // Everything but the check-in scrolls; the check-in is pinned
+                // so it never falls below the fold on a busy rescue day.
+                Expanded(
+                  child: CustomScrollView(
+                    slivers: [
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _topRow(home),
+                              const SizedBox(height: 16),
+                              WeekStripView(
+                                days: weekStrip(
+                                  c.today,
+                                  snap.allCheckIns.map((x) => x.day),
                                 ),
                               ),
-                            ),
-                          ),
-                        Expanded(
-                          child: Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                if (home.rescue == RescueReason.quitDay &&
-                                    home.lastQuitDay != null &&
-                                    home.attemptNumber > 1) ...[
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'Last time you stopped on Day '
-                                    '${home.lastQuitDay}. '
-                                    'Today is Day ${home.dayNumber}.',
-                                    textAlign: TextAlign.center,
-                                    style: textTheme.titleMedium,
+                              if (showBanner)
+                                InkWell(
+                                  onTap: widget.onAddMessage,
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Container(
+                                    margin: const EdgeInsets.only(top: 16),
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: StickColors.lime,
+                                      ),
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: const Text(
+                                      'Record one for future you.',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        fontVariations: [
+                                          FontVariation('wght', 600),
+                                        ],
+                                      ),
+                                    ),
                                   ),
-                                ],
-                                const SizedBox(height: 16),
-                                _card(
-                                  context,
-                                  snap: snap,
-                                  home: home,
-                                  showRescue: showRescue,
-                                  showReplay: showReplay,
-                                  noMotion: noMotion,
                                 ),
-                                const SizedBox(height: 16),
-                              ],
-                            ),
+                              Expanded(
+                                child: Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      if (home.rescue == RescueReason.quitDay &&
+                                          home.lastQuitDay != null &&
+                                          home.attemptNumber > 1) ...[
+                                        const SizedBox(height: 16),
+                                        Text(
+                                          'Last time you stopped on Day '
+                                          '${home.lastQuitDay}. '
+                                          'Today is Day ${home.dayNumber}.',
+                                          textAlign: TextAlign.center,
+                                          style: textTheme.titleMedium,
+                                        ),
+                                      ],
+                                      const SizedBox(height: 16),
+                                      _card(
+                                        context,
+                                        snap: snap,
+                                        home: home,
+                                        showRescue: showRescue,
+                                        showReplay: showReplay,
+                                        noMotion: noMotion,
+                                      ),
+                                      const SizedBox(height: 16),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        _checkInControl(c, home, snap.flags.checkInMode),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                  child: _checkInControl(c, home, snap.flags.checkInMode),
                 ),
               ],
             ),

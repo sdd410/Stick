@@ -112,6 +112,8 @@ void main() {
     });
     await t.pumpWidget(StickScope(controller: c, child: const StickApp()));
     await t.pumpAndSettle();
+    await t.ensureVisible(find.text('⏱ 2-min timer'));
+    await t.pumpAndSettle();
     await t.tap(find.text('⏱ 2-min timer'));
     await t.pump();
     await t.pump(const Duration(milliseconds: 300));

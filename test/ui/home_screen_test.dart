@@ -564,6 +564,30 @@ void main() {
     });
   });
 
+  testWidgets('on a small phone the slide is visible on a busy rescue day', (
+    t,
+  ) async {
+    t.view.physicalSize = const Size(360, 560); // 640 minus the tab bar
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    await pump(
+      t,
+      state(attempt: 2, day: 3, rescue: RescueReason.quitDay, lastQuitDay: 3),
+      sn: Snapshot(
+        habit: snap(quizReason: QuitReason.tired).habit,
+        current: snap().current,
+        ended: const [],
+        allCheckIns: const [],
+        clips: [clip],
+        flags: snap(checkInMode: CheckInMode.slide).flags,
+      ),
+      onPlayReplay: () {},
+      onOpenTimer: (_) {},
+    );
+    expect(t.takeException(), isNull);
+    expect(find.byKey(const Key('slide-knob')).hitTestable(), findsOneWidget);
+  });
+
   group('tips', () {
     const slideTip = "Slide the lime circle right when you've done it.";
     const messagesTip = 'Your messages to future you live here.';
