@@ -70,8 +70,18 @@ class _SlideToCheckInState extends State<SlideToCheckIn>
     super.dispose();
   }
 
+  /// Knob travel; measured when a drag starts (no LayoutBuilder, so Home
+  /// can size itself from its content).
+  void _measure() {
+    final box = context.findRenderObject();
+    if (box is RenderBox && box.hasSize) {
+      _max = (box.size.width - _knob - 2 * _pad).clamp(1, double.infinity);
+    }
+  }
+
   void _onUpdate(DragUpdateDetails d) {
     if (!_enabled || _locked) return;
+    _measure();
     _back.stop();
     setState(() => _dx = (_dx + d.delta.dx).clamp(0, _max));
     final f = _dx / _max;
@@ -94,10 +104,7 @@ class _SlideToCheckInState extends State<SlideToCheckIn>
 
   void _lock() {
     if (_locked || !_enabled) return;
-    setState(() {
-      _locked = true;
-      _dx = _max;
-    });
+    setState(() => _locked = true);
     HapticFeedback.mediumImpact();
     if (!_noMotion) _glow.forward(from: 0);
     widget.onDone!();
@@ -112,9 +119,8 @@ class _SlideToCheckInState extends State<SlideToCheckIn>
     child: ExcludeSemantics(
       child: GestureDetector(
         onLongPress: widget.onLongPress,
-        child: LayoutBuilder(
-          builder: (context, c) {
-            _max = (c.maxWidth - _knob - 2 * _pad).clamp(1, double.infinity);
+        child: Builder(
+          builder: (context) {
             final f = _locked ? 1.0 : _dx / _max;
             final showCheck = _locked || !_enabled;
             return AnimatedBuilder(
@@ -144,7 +150,8 @@ class _SlideToCheckInState extends State<SlideToCheckIn>
                     left: 0,
                     top: 0,
                     bottom: 0,
-                    width: _dx + _knob + 2 * _pad,
+                    right: _locked ? 0 : null,
+                    width: _locked ? null : _dx + _knob + 2 * _pad,
                     child: DecoratedBox(
                       decoration: BoxDecoration(
                         color: StickColors.lime.withValues(
@@ -171,7 +178,8 @@ class _SlideToCheckInState extends State<SlideToCheckIn>
                     ),
                   ),
                   Positioned(
-                    left: _pad + _dx,
+                    left: _locked ? null : _pad + _dx,
+                    right: _locked ? _pad : null,
                     top: _pad,
                     child: GestureDetector(
                       key: const Key('slide-knob'),

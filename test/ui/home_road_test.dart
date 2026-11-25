@@ -103,6 +103,26 @@ void main() {
     expect(today.bottom, lessThanOrEqualTo(list.bottom));
   });
 
+  testWidgets('a new day glides the road instead of jumping', (t) async {
+    t.view.physicalSize = const Size(360, 640);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    await t.pumpWidget(road(state(day: 10, quit: 30)));
+    await t.pump();
+    double pixels() =>
+        t.state<ScrollableState>(find.byType(Scrollable)).position.pixels;
+    final before = pixels();
+    await t.pumpWidget(road(state(day: 11, quit: 30)));
+    await t.pump();
+    await t.pump(const Duration(milliseconds: 150));
+    final mid = pixels();
+    await t.pumpAndSettle();
+    final after = pixels();
+    expect(after, isNot(before));
+    expect(mid, isNot(after)); // still moving at 150 ms
+    expect((mid - before).sign, (after - before).sign);
+  });
+
   testWidgets('paused on the quit day still says paused', (t) async {
     await t.pumpWidget(road(state(day: 5, quit: 5, paused: true)));
     expect(find.text('Day 5 · paused'), findsOneWidget);

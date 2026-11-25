@@ -3,15 +3,21 @@ import 'dart:async';
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stick/controller/stick_controller.dart';
 import 'package:stick/controller/stick_scope.dart';
 import 'package:stick/data/database.dart' as db_;
 import 'package:stick/data/repository.dart';
 import 'package:stick/domain/models.dart';
+import 'package:stick/domain/day_clock.dart';
 import 'package:stick/domain/onboarding.dart';
+import 'package:stick/domain/week_strip.dart';
 import 'package:stick/theme.dart';
 import 'package:stick/ui/home/home_screen.dart';
+import 'package:stick/ui/home/week_strip_view.dart';
+
+import '../support/home_helpers.dart';
 
 class FakeController extends StickController {
   FakeController(db_.StickDatabase db, this._home, this._snap)
@@ -21,9 +27,13 @@ class FakeController extends StickController {
         reminders: NoopReminderSink(),
       );
 
-  final HomeState _home;
+  HomeState _home;
   final Snapshot _snap;
   int checkIns = 0;
+
+  /// When true, a check-in moves to the next day like the real controller.
+  bool advance = false;
+  bool day4Next = false;
   int pickUps = 0;
   Completer<void>? gate;
 
@@ -38,6 +48,14 @@ class FakeController extends StickController {
   Future<void> checkIn() async {
     checkIns++;
     await gate?.future;
+    if (advance) {
+      _home = _home.copyWith(
+        dayNumber: _home.dayNumber + 1,
+        checkedInToday: true,
+        showDay4: day4Next,
+      );
+      notifyListeners();
+    }
   }
 
   @override
@@ -73,6 +91,9 @@ Snapshot snap({
   String name = 'Walk',
   HomeStyle homeStyle = HomeStyle.bigNumber,
   QuitReason? quizReason,
+  String emoji = '⭐',
+  CheckInMode checkInMode = CheckInMode.tap,
+  List<CheckIn> checkIns = const [],
 }) => Snapshot(
   habit: Habit(
     name: name,
@@ -81,15 +102,17 @@ Snapshot snap({
     reminderMinutes: 1140,
     createdAt: DateTime(2026, 11, 1),
     quizReason: quizReason,
+    emoji: emoji,
   ),
   current: Attempt(number: 1, startDay: '2026-11-01', quitTarget: 5),
   ended: const [],
-  allCheckIns: const [],
+  allCheckIns: checkIns,
   clips: clips,
   flags: Flags(
     day4Celebrated: false,
     lastWeeklyReplayDayNumber: null,
     homeStyle: homeStyle,
+    checkInMode: checkInMode,
   ),
 );
 
@@ -117,14 +140,23 @@ void main() {
     VoidCallback? onAddMessage,
     VoidCallback? onPlayReplay,
     VoidCallback? onOpenSettings,
+    VoidCallback? onOpenTimer,
+    bool noMotion = false,
+    void Function(FakeController)? before,
   }) async {
     final c = FakeController(db, s, sn ?? snap());
+    before?.call(c);
     await t.pumpWidget(
       StickScope(
         controller: c,
         child: MaterialApp(
           theme: stickTheme(),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(disableAnimations: noMotion),
+            child: child!,
+          ),
           home: HomeScreen(
+            onOpenTimer: onOpenTimer,
             onOpenProgress: onOpenProgress,
             onAddMessage: onAddMessage,
             onPlayReplay: onPlayReplay,
@@ -144,8 +176,8 @@ void main() {
 
   testWidgets('after check-in shows Done for today, disabled', (t) async {
     final c = await pump(t, state(done: true));
-    expect(find.text('Done for today'), findsOneWidget);
-    await t.tap(find.text('Done for today'));
+    expect(find.text('Done for today ✓'), findsOneWidget);
+    await t.tap(find.text('Done for today ✓'));
     await t.pump();
     expect(c.checkIns, 0);
   });
@@ -257,7 +289,7 @@ void main() {
   testWidgets('rescue without clips shows why text', (t) async {
     await pump(t, state(rescue: RescueReason.quitDay), onPlayReplay: () {});
     expect(find.text('Be healthier'), findsOneWidget);
-    expect(find.text('▶ You have something to say'), findsNothing);
+    expect(find.text('▶ Your message'), findsNothing);
   });
 
   testWidgets('rescue with clips shows replay button wired', (t) async {
@@ -269,7 +301,7 @@ void main() {
       onPlayReplay: () => played++,
     );
     expect(find.text('Be healthier'), findsNothing);
-    await t.tap(find.text('▶ You have something to say'));
+    await t.tap(find.text('▶ Your message'));
     expect(played, 1);
   });
 
@@ -280,7 +312,7 @@ void main() {
       sn: snap(clips: [clip]),
     );
     expect(find.text('Be healthier'), findsOneWidget);
-    expect(find.text('▶ You have something to say'), findsNothing);
+    expect(find.text('▶ Your message'), findsNothing);
   });
 
   testWidgets('counter shows Attempt 4 · Day 2 and opens progress', (t) async {
@@ -390,5 +422,154 @@ void main() {
     await pump(t, state(), onOpenSettings: () => n++);
     await t.tap(find.byIcon(Icons.settings_outlined));
     expect(n, 1);
+  });
+
+  group('slide mode', () {
+    Snapshot slideSnap({List<CheckIn> checkIns = const []}) =>
+        snap(checkInMode: CheckInMode.slide, emoji: '🚶', checkIns: checkIns);
+
+    testWidgets('shows the knob, not the Done today button', (t) async {
+      await pump(t, state(day: 2), sn: slideSnap());
+      expect(find.byKey(const Key('slide-knob')), findsOneWidget);
+      expect(find.text('Slide when done'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'Done today'), findsNothing);
+    });
+
+    testWidgets('the habit card shows emoji and name', (t) async {
+      await pump(t, state(day: 2), sn: slideSnap());
+      expect(find.text('🚶'), findsOneWidget);
+      expect(find.text('Walk'), findsOneWidget);
+    });
+
+    testWidgets('the week strip marks this week\'s check-ins', (t) async {
+      final c = await pump(t, state(day: 2), sn: slideSnap());
+      final yesterday = addDays(c.today, -1);
+      await t.pumpWidget(const SizedBox());
+      await pump(
+        t,
+        state(day: 2),
+        sn: slideSnap(
+          checkIns: [CheckIn(day: yesterday, attempt: 1, tiny: false)],
+        ),
+      );
+      final strip = t.widget<WeekStripView>(find.byType(WeekStripView));
+      final today = strip.days.firstWhere((d) => d.day == c.today);
+      expect(today.state, WeekDayState.today);
+      if (strip.days.any((d) => d.day == yesterday)) {
+        expect(
+          strip.days.firstWhere((d) => d.day == yesterday).state,
+          WeekDayState.done,
+        );
+      }
+    });
+
+    testWidgets('a slide rolls the number up after the animation', (t) async {
+      final c = await pump(
+        t,
+        state(day: 2),
+        sn: slideSnap(),
+        before: (c) => c.advance = true,
+      );
+      await slideToCheckIn(t);
+      await t.pump();
+      await t.pump(const Duration(milliseconds: 150));
+      expect(find.text('Day 2'), findsOneWidget); // rolling out
+      expect(find.text('Day 3'), findsOneWidget); // rolling in
+      expect(find.byKey(const Key('check-in-sparks')), findsOneWidget);
+      await t.pumpAndSettle();
+      expect(find.text('Day 2'), findsNothing);
+      expect(find.text('Day 3'), findsOneWidget);
+      expect(find.byKey(const Key('check-in-sparks')), findsNothing);
+      expect(find.text('Done for today ✓'), findsOneWidget);
+      expect(c.checkIns, 1);
+    });
+
+    testWidgets('reduced motion: number changes at once, no sparks', (t) async {
+      await pump(
+        t,
+        state(day: 2),
+        sn: slideSnap(),
+        noMotion: true,
+        before: (c) => c.advance = true,
+      );
+      await slideToCheckIn(t);
+      await t.pump();
+      await t.pump();
+      expect(find.text('Day 2'), findsNothing);
+      expect(find.text('Day 3'), findsOneWidget);
+      expect(find.byKey(const Key('check-in-sparks')), findsNothing);
+    });
+
+    testWidgets('reaching day 4 plays two heavy taps before the screen', (
+      t,
+    ) async {
+      final haptics = <String>[];
+      t.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'HapticFeedback.vibrate') {
+            haptics.add(call.arguments as String);
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => t.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      await pump(
+        t,
+        state(day: 3),
+        sn: slideSnap(),
+        before: (c) => c
+          ..advance = true
+          ..day4Next = true,
+      );
+      await slideToCheckIn(t);
+      await t.pumpAndSettle();
+      expect(
+        haptics.where((h) => h == 'HapticFeedbackType.heavyImpact'),
+        hasLength(2),
+      );
+      expect(haptics, contains('HapticFeedbackType.lightImpact'));
+      expect(find.byType(HomeScreen), findsNothing); // Day 4 screen on top
+    });
+
+    testWidgets('rescue shows the timer chip, wired', (t) async {
+      var timers = 0;
+      await pump(
+        t,
+        state(day: 3, rescue: RescueReason.quitDay),
+        sn: slideSnap(),
+        onOpenTimer: () => timers++,
+      );
+      await t.tap(find.text('⏱ 2-min timer'));
+      expect(timers, 1);
+    });
+
+    testWidgets('long-press on the slide opens the timer', (t) async {
+      var timers = 0;
+      await pump(
+        t,
+        state(day: 2),
+        sn: slideSnap(),
+        onOpenTimer: () => timers++,
+      );
+      await t.longPress(find.text('Slide when done'));
+      expect(timers, 1);
+    });
+
+    testWidgets('paused shows Pick it back up, no knob', (t) async {
+      await pump(t, state(day: 3, paused: true), sn: slideSnap());
+      expect(find.text('Pick it back up'), findsOneWidget);
+      expect(find.byKey(const Key('slide-knob')), findsNothing);
+    });
+
+    testWidgets('done today shows the settled bar', (t) async {
+      await pump(t, state(day: 3, done: true), sn: slideSnap());
+      expect(find.text('Done for today ✓'), findsOneWidget);
+    });
   });
 }

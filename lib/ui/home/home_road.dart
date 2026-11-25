@@ -38,17 +38,29 @@ class _HomeRoadState extends State<HomeRoad> {
     super.didUpdateWidget(old);
     if (old.state.dayNumber != widget.state.dayNumber ||
         old.state.quitTarget != widget.state.quitTarget) {
-      _centerToday();
+      _centerToday(glide: true);
     }
   }
 
   // Days are listed highest first, so today sits `above` rows from the top.
-  void _centerToday() {
+  // A new day (after a check-in) glides one step; the first build jumps.
+  void _centerToday({bool glide = false}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_scroll.hasClients) return;
       final above = (_lastDay - widget.state.dayNumber) * _rowHeight;
-      final target = above - (_viewport - _todayHeight) / 2;
-      _scroll.jumpTo(target.clamp(0.0, _scroll.position.maxScrollExtent));
+      final target = (above - (_viewport - _todayHeight) / 2).clamp(
+        0.0,
+        _scroll.position.maxScrollExtent,
+      );
+      if (glide && !MediaQuery.disableAnimationsOf(context)) {
+        _scroll.animateTo(
+          target,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeOutCubic,
+        );
+      } else {
+        _scroll.jumpTo(target);
+      }
     });
   }
 

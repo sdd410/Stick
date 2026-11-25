@@ -17,6 +17,8 @@ import 'package:stick/services/clip_recorder.dart';
 import 'package:stick/ui/replay/clip_player.dart';
 import 'package:stick/ui/replay/replay_screen.dart';
 
+import 'support/home_helpers.dart';
+
 class _Sink implements ReminderSink {
   @override
   Future<void> reschedule(Snapshot? s, DateTime now) async {}
@@ -101,7 +103,7 @@ void main() {
   }
 
   Future<void> checkIn(WidgetTester t) async {
-    await t.tap(find.text('Done today'));
+    await slideToCheckIn(t);
     await settle(t);
   }
 
@@ -135,7 +137,7 @@ void main() {
 
     // Three days in a row.
     await checkIn(t);
-    expect(find.text('Done for today'), findsOneWidget);
+    expect(find.text('Done for today ✓'), findsOneWidget);
     await goTo(t, DateTime(2026, 11, 21, 12));
     await checkIn(t);
     await goTo(t, DateTime(2026, 11, 22, 12));

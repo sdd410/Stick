@@ -9,6 +9,8 @@ import 'package:stick/data/repository.dart';
 import 'package:stick/theme.dart';
 import 'package:stick/ui/home/home_screen.dart';
 
+import '../support/home_helpers.dart';
+
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
   late db_.StickDatabase db;
@@ -55,7 +57,7 @@ void main() {
     expect(find.text('Day 4. You made it past the drop-off.'), findsNothing);
 
     await t.runAsync(() async {
-      await t.tap(find.text('Done today'));
+      await slideToCheckIn(t);
       await Future<void>.delayed(const Duration(milliseconds: 300));
     });
     await t.pumpAndSettle();

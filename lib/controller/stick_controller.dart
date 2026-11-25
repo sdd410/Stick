@@ -58,6 +58,9 @@ class StickController extends ChangeNotifier {
 
   DayKey get _today => dayKeyOf(_clock());
 
+  /// Today's day key (days start at 3 am).
+  DayKey get today => _today;
+
   Future<Snapshot?> _load() async {
     var s = await _repo.load();
     final files = _clipFiles;
