@@ -76,14 +76,14 @@ Data: store `emoji`, `templateId` (nullable), `quizQuitDay` (nullable), `quizRea
 - Full screen ring countdown, Pause, Done. When it reaches 0 (or Done is tapped) the day is checked in, same as a normal check-in.
 - Runs only while the screen is open, using a start timestamp so it survives rotation and short app switches. No foreground service, no new permissions.
 
-## Rollout
-| Update | Contents | Ship to |
-|---|---|---|
-| 1.1 | Friendlier start | closed testers (Play closed track) |
-| 1.2 | Friendlier home | closed testers |
-| 1.3 | Tiny timer | closed testers, then production with the Pro unlock |
+## Startup logo animation (added 25 Nov 2026)
+- Every cold start (not when returning to a running app): starts from the system splash frame (S. icon centred on `#0B0B12`), the dot drops in with a bounce, the lime tile pops, "STICK" slides in (Archivo Black), then it fades into Home or setup. About 0.8 s.
+- A tap skips it. With the system "remove animations" setting on, it is skipped.
 
-Each update: `versionCode` +1, Play release notes, test on Android 16 emulator, Android 8 emulator and a real phone (`TESTING.md`), and one "Build" reel showing before/after.
+## Rollout (changed 25 Nov 2026)
+**Everything above ships together as version 1.1** (onboarding, new Home with slide check-in, tabs, tips, the 2-minute timer and the startup animation). The user does not want a half-redesigned release. 1.0 only ever ran on the user's phone, so no database migration is kept for it.
+
+Before release: `versionCode` 2, one set of Play release notes, the device checklist in `TESTING.md` on the Android 16 emulator, the Android 8 emulator and a real phone. A release build is made only when the user asks.
 
 ## Decisions (confirmed by the user, 25 Nov 2026)
 These touch features already decided in `stick-mvp.md`:
