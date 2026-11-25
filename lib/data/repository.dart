@@ -83,6 +83,10 @@ class StickRepository {
     why: r.why,
     reminderMinutes: r.reminderMinutes,
     createdAt: r.createdAt,
+    emoji: r.emoji,
+    templateId: r.templateId,
+    quizQuitDay: r.quizQuitDay,
+    quizReason: r.quizReason,
   );
 
   Attempt _attempt(db.Attempt r) => Attempt(
@@ -160,6 +164,10 @@ class StickRepository {
     why: Value(h.why),
     reminderMinutes: Value(h.reminderMinutes),
     createdAt: Value(h.createdAt),
+    emoji: Value(h.emoji),
+    templateId: Value(h.templateId),
+    quizQuitDay: Value(h.quizQuitDay),
+    quizReason: Value(h.quizReason),
   );
 
   Future<void> createHabit(Habit h, DayKey today) => _db.transaction(() async {

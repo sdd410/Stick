@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../domain/models.dart' show ClipType, HomeStyle;
+import '../domain/onboarding.dart' show QuitDayAnswer, QuitReason, defaultEmoji;
 
 part 'database.g.dart';
 
@@ -17,6 +18,12 @@ class Habits extends Table {
   TextColumn get why => text()();
   IntColumn get reminderMinutes => integer()();
   DateTimeColumn get createdAt => dateTime()();
+
+  // Schema 2 (1.1): onboarding.
+  TextColumn get emoji => text().withDefault(const Constant(defaultEmoji))();
+  TextColumn get templateId => text().nullable()();
+  TextColumn get quizQuitDay => textEnum<QuitDayAnswer>().nullable()();
+  TextColumn get quizReason => textEnum<QuitReason>().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -83,19 +90,28 @@ class StickDatabase extends _$StickDatabase {
   StickDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
-    // Schema 1 is the first shipped version, so nothing can upgrade yet.
-    // When schemaVersion grows, add one explicit step per version here (and
-    // dump the new schema to drift_schemas/). Failing loudly beats drift's
-    // silent default for a version nobody wrote a step for.
-    // Replace the throw with `for (var v = from; v < to; v++) switch (v) {...}`
-    // once a step exists.
+    // Schema 1 shipped in 1.0.0. One explicit step per version, and every
+    // new version is dumped to drift_schemas/. An unknown version fails
+    // loudly instead of drift's silent default.
     onUpgrade: (m, from, to) async {
-      throw UnsupportedError('No migration from schema version $from to $to');
+      for (var v = from; v < to; v++) {
+        switch (v) {
+          case 1:
+            await m.addColumn(habits, habits.emoji);
+            await m.addColumn(habits, habits.templateId);
+            await m.addColumn(habits, habits.quizQuitDay);
+            await m.addColumn(habits, habits.quizReason);
+          default:
+            throw UnsupportedError(
+              'No migration from schema version $v to ${v + 1}',
+            );
+        }
+      }
     },
   );
 }

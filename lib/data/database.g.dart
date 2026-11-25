@@ -66,6 +66,45 @@ class $HabitsTable extends Habits with TableInfo<$HabitsTable, Habit> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _emojiMeta = const VerificationMeta('emoji');
+  @override
+  late final GeneratedColumn<String> emoji = GeneratedColumn<String>(
+    'emoji',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(defaultEmoji),
+  );
+  static const VerificationMeta _templateIdMeta = const VerificationMeta(
+    'templateId',
+  );
+  @override
+  late final GeneratedColumn<String> templateId = GeneratedColumn<String>(
+    'template_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<QuitDayAnswer?, String>
+  quizQuitDay = GeneratedColumn<String>(
+    'quiz_quit_day',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  ).withConverter<QuitDayAnswer?>($HabitsTable.$converterquizQuitDayn);
+  @override
+  late final GeneratedColumnWithTypeConverter<QuitReason?, String> quizReason =
+      GeneratedColumn<String>(
+        'quiz_reason',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      ).withConverter<QuitReason?>($HabitsTable.$converterquizReasonn);
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -74,6 +113,10 @@ class $HabitsTable extends Habits with TableInfo<$HabitsTable, Habit> {
     why,
     reminderMinutes,
     createdAt,
+    emoji,
+    templateId,
+    quizQuitDay,
+    quizReason,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -131,6 +174,18 @@ class $HabitsTable extends Habits with TableInfo<$HabitsTable, Habit> {
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
+    if (data.containsKey('emoji')) {
+      context.handle(
+        _emojiMeta,
+        emoji.isAcceptableOrUnknown(data['emoji']!, _emojiMeta),
+      );
+    }
+    if (data.containsKey('template_id')) {
+      context.handle(
+        _templateIdMeta,
+        templateId.isAcceptableOrUnknown(data['template_id']!, _templateIdMeta),
+      );
+    }
     return context;
   }
 
@@ -164,6 +219,26 @@ class $HabitsTable extends Habits with TableInfo<$HabitsTable, Habit> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      emoji: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}emoji'],
+      )!,
+      templateId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}template_id'],
+      ),
+      quizQuitDay: $HabitsTable.$converterquizQuitDayn.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}quiz_quit_day'],
+        ),
+      ),
+      quizReason: $HabitsTable.$converterquizReasonn.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}quiz_reason'],
+        ),
+      ),
     );
   }
 
@@ -171,6 +246,17 @@ class $HabitsTable extends Habits with TableInfo<$HabitsTable, Habit> {
   $HabitsTable createAlias(String alias) {
     return $HabitsTable(attachedDatabase, alias);
   }
+
+  static JsonTypeConverter2<QuitDayAnswer, String, String>
+  $converterquizQuitDay = const EnumNameConverter<QuitDayAnswer>(
+    QuitDayAnswer.values,
+  );
+  static JsonTypeConverter2<QuitDayAnswer?, String?, String?>
+  $converterquizQuitDayn = JsonTypeConverter2.asNullable($converterquizQuitDay);
+  static JsonTypeConverter2<QuitReason, String, String> $converterquizReason =
+      const EnumNameConverter<QuitReason>(QuitReason.values);
+  static JsonTypeConverter2<QuitReason?, String?, String?>
+  $converterquizReasonn = JsonTypeConverter2.asNullable($converterquizReason);
 }
 
 class Habit extends DataClass implements Insertable<Habit> {
@@ -180,6 +266,10 @@ class Habit extends DataClass implements Insertable<Habit> {
   final String why;
   final int reminderMinutes;
   final DateTime createdAt;
+  final String emoji;
+  final String? templateId;
+  final QuitDayAnswer? quizQuitDay;
+  final QuitReason? quizReason;
   const Habit({
     required this.id,
     required this.name,
@@ -187,6 +277,10 @@ class Habit extends DataClass implements Insertable<Habit> {
     required this.why,
     required this.reminderMinutes,
     required this.createdAt,
+    required this.emoji,
+    this.templateId,
+    this.quizQuitDay,
+    this.quizReason,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -199,6 +293,20 @@ class Habit extends DataClass implements Insertable<Habit> {
     map['why'] = Variable<String>(why);
     map['reminder_minutes'] = Variable<int>(reminderMinutes);
     map['created_at'] = Variable<DateTime>(createdAt);
+    map['emoji'] = Variable<String>(emoji);
+    if (!nullToAbsent || templateId != null) {
+      map['template_id'] = Variable<String>(templateId);
+    }
+    if (!nullToAbsent || quizQuitDay != null) {
+      map['quiz_quit_day'] = Variable<String>(
+        $HabitsTable.$converterquizQuitDayn.toSql(quizQuitDay),
+      );
+    }
+    if (!nullToAbsent || quizReason != null) {
+      map['quiz_reason'] = Variable<String>(
+        $HabitsTable.$converterquizReasonn.toSql(quizReason),
+      );
+    }
     return map;
   }
 
@@ -210,6 +318,16 @@ class Habit extends DataClass implements Insertable<Habit> {
       why: Value(why),
       reminderMinutes: Value(reminderMinutes),
       createdAt: Value(createdAt),
+      emoji: Value(emoji),
+      templateId: templateId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(templateId),
+      quizQuitDay: quizQuitDay == null && nullToAbsent
+          ? const Value.absent()
+          : Value(quizQuitDay),
+      quizReason: quizReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(quizReason),
     );
   }
 
@@ -225,6 +343,14 @@ class Habit extends DataClass implements Insertable<Habit> {
       why: serializer.fromJson<String>(json['why']),
       reminderMinutes: serializer.fromJson<int>(json['reminderMinutes']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      emoji: serializer.fromJson<String>(json['emoji']),
+      templateId: serializer.fromJson<String?>(json['templateId']),
+      quizQuitDay: $HabitsTable.$converterquizQuitDayn.fromJson(
+        serializer.fromJson<String?>(json['quizQuitDay']),
+      ),
+      quizReason: $HabitsTable.$converterquizReasonn.fromJson(
+        serializer.fromJson<String?>(json['quizReason']),
+      ),
     );
   }
   @override
@@ -237,6 +363,14 @@ class Habit extends DataClass implements Insertable<Habit> {
       'why': serializer.toJson<String>(why),
       'reminderMinutes': serializer.toJson<int>(reminderMinutes),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'emoji': serializer.toJson<String>(emoji),
+      'templateId': serializer.toJson<String?>(templateId),
+      'quizQuitDay': serializer.toJson<String?>(
+        $HabitsTable.$converterquizQuitDayn.toJson(quizQuitDay),
+      ),
+      'quizReason': serializer.toJson<String?>(
+        $HabitsTable.$converterquizReasonn.toJson(quizReason),
+      ),
     };
   }
 
@@ -247,6 +381,10 @@ class Habit extends DataClass implements Insertable<Habit> {
     String? why,
     int? reminderMinutes,
     DateTime? createdAt,
+    String? emoji,
+    Value<String?> templateId = const Value.absent(),
+    Value<QuitDayAnswer?> quizQuitDay = const Value.absent(),
+    Value<QuitReason?> quizReason = const Value.absent(),
   }) => Habit(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -254,6 +392,10 @@ class Habit extends DataClass implements Insertable<Habit> {
     why: why ?? this.why,
     reminderMinutes: reminderMinutes ?? this.reminderMinutes,
     createdAt: createdAt ?? this.createdAt,
+    emoji: emoji ?? this.emoji,
+    templateId: templateId.present ? templateId.value : this.templateId,
+    quizQuitDay: quizQuitDay.present ? quizQuitDay.value : this.quizQuitDay,
+    quizReason: quizReason.present ? quizReason.value : this.quizReason,
   );
   Habit copyWithCompanion(HabitsCompanion data) {
     return Habit(
@@ -265,6 +407,16 @@ class Habit extends DataClass implements Insertable<Habit> {
           ? data.reminderMinutes.value
           : this.reminderMinutes,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      emoji: data.emoji.present ? data.emoji.value : this.emoji,
+      templateId: data.templateId.present
+          ? data.templateId.value
+          : this.templateId,
+      quizQuitDay: data.quizQuitDay.present
+          ? data.quizQuitDay.value
+          : this.quizQuitDay,
+      quizReason: data.quizReason.present
+          ? data.quizReason.value
+          : this.quizReason,
     );
   }
 
@@ -276,14 +428,28 @@ class Habit extends DataClass implements Insertable<Habit> {
           ..write('tiny: $tiny, ')
           ..write('why: $why, ')
           ..write('reminderMinutes: $reminderMinutes, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('emoji: $emoji, ')
+          ..write('templateId: $templateId, ')
+          ..write('quizQuitDay: $quizQuitDay, ')
+          ..write('quizReason: $quizReason')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, tiny, why, reminderMinutes, createdAt);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    tiny,
+    why,
+    reminderMinutes,
+    createdAt,
+    emoji,
+    templateId,
+    quizQuitDay,
+    quizReason,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -293,7 +459,11 @@ class Habit extends DataClass implements Insertable<Habit> {
           other.tiny == this.tiny &&
           other.why == this.why &&
           other.reminderMinutes == this.reminderMinutes &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.emoji == this.emoji &&
+          other.templateId == this.templateId &&
+          other.quizQuitDay == this.quizQuitDay &&
+          other.quizReason == this.quizReason);
 }
 
 class HabitsCompanion extends UpdateCompanion<Habit> {
@@ -303,6 +473,10 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
   final Value<String> why;
   final Value<int> reminderMinutes;
   final Value<DateTime> createdAt;
+  final Value<String> emoji;
+  final Value<String?> templateId;
+  final Value<QuitDayAnswer?> quizQuitDay;
+  final Value<QuitReason?> quizReason;
   const HabitsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -310,6 +484,10 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
     this.why = const Value.absent(),
     this.reminderMinutes = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.emoji = const Value.absent(),
+    this.templateId = const Value.absent(),
+    this.quizQuitDay = const Value.absent(),
+    this.quizReason = const Value.absent(),
   });
   HabitsCompanion.insert({
     this.id = const Value.absent(),
@@ -318,6 +496,10 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
     required String why,
     required int reminderMinutes,
     required DateTime createdAt,
+    this.emoji = const Value.absent(),
+    this.templateId = const Value.absent(),
+    this.quizQuitDay = const Value.absent(),
+    this.quizReason = const Value.absent(),
   }) : name = Value(name),
        why = Value(why),
        reminderMinutes = Value(reminderMinutes),
@@ -329,6 +511,10 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
     Expression<String>? why,
     Expression<int>? reminderMinutes,
     Expression<DateTime>? createdAt,
+    Expression<String>? emoji,
+    Expression<String>? templateId,
+    Expression<String>? quizQuitDay,
+    Expression<String>? quizReason,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -337,6 +523,10 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
       if (why != null) 'why': why,
       if (reminderMinutes != null) 'reminder_minutes': reminderMinutes,
       if (createdAt != null) 'created_at': createdAt,
+      if (emoji != null) 'emoji': emoji,
+      if (templateId != null) 'template_id': templateId,
+      if (quizQuitDay != null) 'quiz_quit_day': quizQuitDay,
+      if (quizReason != null) 'quiz_reason': quizReason,
     });
   }
 
@@ -347,6 +537,10 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
     Value<String>? why,
     Value<int>? reminderMinutes,
     Value<DateTime>? createdAt,
+    Value<String>? emoji,
+    Value<String?>? templateId,
+    Value<QuitDayAnswer?>? quizQuitDay,
+    Value<QuitReason?>? quizReason,
   }) {
     return HabitsCompanion(
       id: id ?? this.id,
@@ -355,6 +549,10 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
       why: why ?? this.why,
       reminderMinutes: reminderMinutes ?? this.reminderMinutes,
       createdAt: createdAt ?? this.createdAt,
+      emoji: emoji ?? this.emoji,
+      templateId: templateId ?? this.templateId,
+      quizQuitDay: quizQuitDay ?? this.quizQuitDay,
+      quizReason: quizReason ?? this.quizReason,
     );
   }
 
@@ -379,6 +577,22 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (emoji.present) {
+      map['emoji'] = Variable<String>(emoji.value);
+    }
+    if (templateId.present) {
+      map['template_id'] = Variable<String>(templateId.value);
+    }
+    if (quizQuitDay.present) {
+      map['quiz_quit_day'] = Variable<String>(
+        $HabitsTable.$converterquizQuitDayn.toSql(quizQuitDay.value),
+      );
+    }
+    if (quizReason.present) {
+      map['quiz_reason'] = Variable<String>(
+        $HabitsTable.$converterquizReasonn.toSql(quizReason.value),
+      );
+    }
     return map;
   }
 
@@ -390,7 +604,11 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
           ..write('tiny: $tiny, ')
           ..write('why: $why, ')
           ..write('reminderMinutes: $reminderMinutes, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('emoji: $emoji, ')
+          ..write('templateId: $templateId, ')
+          ..write('quizQuitDay: $quizQuitDay, ')
+          ..write('quizReason: $quizReason')
           ..write(')'))
         .toString();
   }
@@ -1974,6 +2192,10 @@ typedef $$HabitsTableCreateCompanionBuilder = HabitsCompanion Function({
   required String why,
   required int reminderMinutes,
   required DateTime createdAt,
+  Value<String> emoji,
+  Value<String?> templateId,
+  Value<QuitDayAnswer?> quizQuitDay,
+  Value<QuitReason?> quizReason,
 });
 typedef $$HabitsTableUpdateCompanionBuilder = HabitsCompanion Function({
   Value<int> id,
@@ -1982,6 +2204,10 @@ typedef $$HabitsTableUpdateCompanionBuilder = HabitsCompanion Function({
   Value<String> why,
   Value<int> reminderMinutes,
   Value<DateTime> createdAt,
+  Value<String> emoji,
+  Value<String?> templateId,
+  Value<QuitDayAnswer?> quizQuitDay,
+  Value<QuitReason?> quizReason,
 });
 
 class $$HabitsTableFilterComposer
@@ -2021,6 +2247,28 @@ class $$HabitsTableFilterComposer
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get emoji => $composableBuilder(
+    column: $table.emoji,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get templateId => $composableBuilder(
+    column: $table.templateId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<QuitDayAnswer?, QuitDayAnswer, String>
+  get quizQuitDay => $composableBuilder(
+    column: $table.quizQuitDay,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<QuitReason?, QuitReason, String>
+  get quizReason => $composableBuilder(
+    column: $table.quizReason,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
   );
 }
 
@@ -2062,6 +2310,26 @@ class $$HabitsTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get emoji => $composableBuilder(
+    column: $table.emoji,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get templateId => $composableBuilder(
+    column: $table.templateId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get quizQuitDay => $composableBuilder(
+    column: $table.quizQuitDay,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get quizReason => $composableBuilder(
+    column: $table.quizReason,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$HabitsTableAnnotationComposer
@@ -2092,6 +2360,26 @@ class $$HabitsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get emoji =>
+      $composableBuilder(column: $table.emoji, builder: (column) => column);
+
+  GeneratedColumn<String> get templateId => $composableBuilder(
+    column: $table.templateId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumnWithTypeConverter<QuitDayAnswer?, String> get quizQuitDay =>
+      $composableBuilder(
+        column: $table.quizQuitDay,
+        builder: (column) => column,
+      );
+
+  GeneratedColumnWithTypeConverter<QuitReason?, String> get quizReason =>
+      $composableBuilder(
+        column: $table.quizReason,
+        builder: (column) => column,
+      );
 }
 
 class $$HabitsTableTableManager
@@ -2128,6 +2416,10 @@ class $$HabitsTableTableManager
                 Value<String> why = const Value.absent(),
                 Value<int> reminderMinutes = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<String> emoji = const Value.absent(),
+                Value<String?> templateId = const Value.absent(),
+                Value<QuitDayAnswer?> quizQuitDay = const Value.absent(),
+                Value<QuitReason?> quizReason = const Value.absent(),
               }) => HabitsCompanion(
                 id: id,
                 name: name,
@@ -2135,6 +2427,10 @@ class $$HabitsTableTableManager
                 why: why,
                 reminderMinutes: reminderMinutes,
                 createdAt: createdAt,
+                emoji: emoji,
+                templateId: templateId,
+                quizQuitDay: quizQuitDay,
+                quizReason: quizReason,
               ),
           createCompanionCallback:
               ({
@@ -2144,6 +2440,10 @@ class $$HabitsTableTableManager
                 required String why,
                 required int reminderMinutes,
                 required DateTime createdAt,
+                Value<String> emoji = const Value.absent(),
+                Value<String?> templateId = const Value.absent(),
+                Value<QuitDayAnswer?> quizQuitDay = const Value.absent(),
+                Value<QuitReason?> quizReason = const Value.absent(),
               }) => HabitsCompanion.insert(
                 id: id,
                 name: name,
@@ -2151,6 +2451,10 @@ class $$HabitsTableTableManager
                 why: why,
                 reminderMinutes: reminderMinutes,
                 createdAt: createdAt,
+                emoji: emoji,
+                templateId: templateId,
+                quizQuitDay: quizQuitDay,
+                quizReason: quizReason,
               ),
           withReferenceMapper: (p0) => p0
               .map(

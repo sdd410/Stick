@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:stick/data/database.dart' as db_;
 import 'package:stick/data/repository.dart';
 import 'package:stick/domain/models.dart';
+import 'package:stick/domain/onboarding.dart';
 
 final _habit = Habit(
   name: 'Walk',
@@ -28,6 +29,26 @@ void main() {
 
   test('load returns null before setup', () async {
     expect(await repo.load(), isNull);
+  });
+
+  test('createHabit stores emoji, template and quiz answers', () async {
+    final h = _habit.copyWith(
+      emoji: '🚶',
+      templateId: 'walk',
+      quizQuitDay: QuitDayAnswer.day3,
+      quizReason: QuitReason.tired,
+    );
+    await repo.createHabit(h, '2026-11-20');
+    expect((await repo.load())!.habit, h);
+  });
+
+  test('a habit without template or quiz keeps the default emoji', () async {
+    await repo.createHabit(_habit, '2026-11-20');
+    final h = (await repo.load())!.habit;
+    expect(h.emoji, '⭐');
+    expect(h.templateId, isNull);
+    expect(h.quizQuitDay, isNull);
+    expect(h.quizReason, isNull);
   });
 
   test('createHabit makes attempt 1 with quitTarget 3', () async {
@@ -221,7 +242,7 @@ void main() {
   test('upgrading from an unknown schema version fails loudly', () async {
     final strategy = db.migration;
     expect(
-      () => strategy.onUpgrade(Migrator(db), 1, 2),
+      () => strategy.onUpgrade(Migrator(db), 2, 3),
       throwsA(isA<UnsupportedError>()),
     );
   });
