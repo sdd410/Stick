@@ -7,6 +7,7 @@ import '../data/repository.dart';
 import '../domain/day_clock.dart';
 import '../domain/habit_engine.dart';
 import '../domain/models.dart';
+import '../domain/onboarding.dart';
 import '../services/clip_files.dart';
 
 abstract class ReminderSink {
@@ -56,6 +57,9 @@ class StickController extends ChangeNotifier {
   Object? get loadError => _loadError;
 
   DayKey get _today => dayKeyOf(_clock());
+
+  /// Today's day key (days start at 3 am).
+  DayKey get today => _today;
 
   Future<Snapshot?> _load() async {
     var s = await _repo.load();
@@ -163,6 +167,10 @@ class StickController extends ChangeNotifier {
     String? tiny,
     required String why,
     required int reminderMinutes,
+    String emoji = defaultEmoji,
+    String? templateId,
+    QuitDayAnswer? quizQuitDay,
+    QuitReason? quizReason,
   }) => _run(() async {
     final now = _clock();
     final t = tiny?.trim();
@@ -173,6 +181,10 @@ class StickController extends ChangeNotifier {
         why: why.trim(),
         reminderMinutes: reminderMinutes,
         createdAt: now,
+        emoji: emoji,
+        templateId: templateId,
+        quizQuitDay: quizQuitDay,
+        quizReason: quizReason,
       ),
       dayKeyOf(now),
     );
@@ -271,6 +283,12 @@ class StickController extends ChangeNotifier {
 
   Future<void> setHomeStyle(HomeStyle s) =>
       _setFlags((f, _) => f.copyWith(homeStyle: s));
+
+  Future<void> setCheckInMode(CheckInMode m) =>
+      _setFlags((f, _) => f.copyWith(checkInMode: m));
+
+  Future<void> markTipsSeen() =>
+      _setFlags((f, _) => f.copyWith(tipsSeen: true));
 
   Future<void> _setFlags(Flags Function(Flags, HomeState?) change) =>
       _run(() async {

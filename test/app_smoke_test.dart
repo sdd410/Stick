@@ -27,7 +27,7 @@ void main() {
         scaffold.backgroundColor ??
         Theme.of(tester.element(find.byType(Scaffold))).scaffoldBackgroundColor;
     expect(bg, const Color(0xFF0B0B12));
-    expect(find.text('Step 1 of 3'), findsOneWidget);
+    expect(find.text('Built for the day you quit.'), findsOneWidget);
   });
 
   testWidgets('a failed first load shows a retry screen, not a blank one', (
@@ -55,7 +55,7 @@ void main() {
 
     expect(c.loadError, isNull);
     expect(find.text('Something went wrong. Try again'), findsNothing);
-    expect(find.text('Step 1 of 3'), findsOneWidget);
+    expect(find.text('Built for the day you quit.'), findsOneWidget);
   });
 }
 

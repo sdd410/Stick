@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../domain/day_clock.dart';
 import '../domain/habit_engine.dart';
+import '../domain/onboarding.dart' show firstQuitTarget;
 import '../domain/models.dart';
 import 'database.dart' as db;
 
@@ -83,6 +84,10 @@ class StickRepository {
     why: r.why,
     reminderMinutes: r.reminderMinutes,
     createdAt: r.createdAt,
+    emoji: r.emoji,
+    templateId: r.templateId,
+    quizQuitDay: r.quizQuitDay,
+    quizReason: r.quizReason,
   );
 
   Attempt _attempt(db.Attempt r) => Attempt(
@@ -149,6 +154,8 @@ class StickRepository {
               day4Celebrated: flagRow.day4Celebrated,
               lastWeeklyReplayDayNumber: flagRow.lastWeeklyReplayDayNumber,
               homeStyle: flagRow.homeStyle,
+              checkInMode: flagRow.checkInMode,
+              tipsSeen: flagRow.tipsSeen,
             ),
     );
   }
@@ -160,6 +167,10 @@ class StickRepository {
     why: Value(h.why),
     reminderMinutes: Value(h.reminderMinutes),
     createdAt: Value(h.createdAt),
+    emoji: Value(h.emoji),
+    templateId: Value(h.templateId),
+    quizQuitDay: Value(h.quizQuitDay),
+    quizReason: Value(h.quizReason),
   );
 
   Future<void> createHabit(Habit h, DayKey today) => _db.transaction(() async {
@@ -172,7 +183,7 @@ class StickRepository {
           db.AttemptsCompanion.insert(
             number: const Value(1),
             startDay: today,
-            quitTarget: 3,
+            quitTarget: firstQuitTarget(h.quizQuitDay),
           ),
         );
     await _db
@@ -326,6 +337,8 @@ class StickRepository {
     day4Celebrated: Value(f.day4Celebrated),
     lastWeeklyReplayDayNumber: Value(f.lastWeeklyReplayDayNumber),
     homeStyle: Value(f.homeStyle),
+    checkInMode: Value(f.checkInMode),
+    tipsSeen: Value(f.tipsSeen),
   );
 
   Future<void> setFlags(Flags f) async {

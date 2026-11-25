@@ -5,7 +5,8 @@ import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
-import '../domain/models.dart' show ClipType, HomeStyle;
+import '../domain/models.dart' show CheckInMode, ClipType, HomeStyle;
+import '../domain/onboarding.dart' show QuitDayAnswer, QuitReason, defaultEmoji;
 
 part 'database.g.dart';
 
@@ -17,6 +18,13 @@ class Habits extends Table {
   TextColumn get why => text()();
   IntColumn get reminderMinutes => integer()();
   DateTimeColumn get createdAt => dateTime()();
+
+  // Onboarding (1.1). Added to schema 1: no build with an older schema 1
+  // was ever shipped to anyone but the developer (reinstall to upgrade).
+  TextColumn get emoji => text().withDefault(const Constant(defaultEmoji))();
+  TextColumn get templateId => text().nullable()();
+  TextColumn get quizQuitDay => textEnum<QuitDayAnswer>().nullable()();
+  TextColumn get quizReason => textEnum<QuitReason>().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -71,6 +79,9 @@ class Flags extends Table {
   IntColumn get lastWeeklyReplayDayNumber => integer().nullable()();
   TextColumn get homeStyle =>
       textEnum<HomeStyle>().withDefault(const Constant('bigNumber'))();
+  TextColumn get checkInMode =>
+      textEnum<CheckInMode>().withDefault(const Constant('slide'))();
+  BoolColumn get tipsSeen => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -85,6 +96,18 @@ class StickDatabase extends _$StickDatabase {
   @override
   int get schemaVersion => 1;
 
+  Future<bool> _missesAColumn() async {
+    for (final t in allTables) {
+      final rows = await customSelect(
+        'PRAGMA table_info("${t.actualTableName}")',
+      ).get();
+      if (rows.isEmpty) continue; // not created yet
+      final have = rows.map((r) => r.read<String>('name')).toSet();
+      if (t.$columns.any((c) => !have.contains(c.name))) return true;
+    }
+    return false;
+  }
+
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
@@ -92,10 +115,19 @@ class StickDatabase extends _$StickDatabase {
     // When schemaVersion grows, add one explicit step per version here (and
     // dump the new schema to drift_schemas/). Failing loudly beats drift's
     // silent default for a version nobody wrote a step for.
-    // Replace the throw with `for (var v = from; v < to; v++) switch (v) {...}`
-    // once a step exists.
     onUpgrade: (m, from, to) async {
       throw UnsupportedError('No migration from schema version $from to $to');
+    },
+    // Builds before 1.1 also used schema 1 but lacked columns added since,
+    // and Android Auto Backup can restore such a file after a reinstall.
+    // Only the developer's phone ever had one, so start over instead of
+    // breaking: any declared column missing from an existing table resets.
+    beforeOpen: (details) async {
+      if (!await _missesAColumn()) return;
+      for (final t in allTables) {
+        await customStatement('DROP TABLE IF EXISTS "${t.actualTableName}"');
+      }
+      await createMigrator().createAll();
     },
   );
 }

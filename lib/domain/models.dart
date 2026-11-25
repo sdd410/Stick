@@ -1,4 +1,5 @@
 import 'day_clock.dart';
+import 'onboarding.dart';
 
 /// Marker so `copyWith` can tell "not passed" from an explicit null.
 const Object _keep = Object();
@@ -10,6 +11,10 @@ class Habit {
     required this.why,
     required this.reminderMinutes,
     required this.createdAt,
+    this.emoji = defaultEmoji,
+    this.templateId,
+    this.quizQuitDay,
+    this.quizReason,
   });
 
   final String name;
@@ -17,6 +22,14 @@ class Habit {
   final String why;
   final int reminderMinutes;
   final DateTime createdAt;
+  final String emoji;
+
+  /// The onboarding template it came from, or null when typed by hand.
+  final String? templateId;
+
+  /// Onboarding quiz answers (wording only; null when skipped or pre-1.1).
+  final QuitDayAnswer? quizQuitDay;
+  final QuitReason? quizReason;
 
   Habit copyWith({
     String? name,
@@ -24,12 +37,26 @@ class Habit {
     String? why,
     int? reminderMinutes,
     DateTime? createdAt,
+    String? emoji,
+    Object? templateId = _keep,
+    Object? quizQuitDay = _keep,
+    Object? quizReason = _keep,
   }) => Habit(
     name: name ?? this.name,
     tiny: identical(tiny, _keep) ? this.tiny : tiny as String?,
     why: why ?? this.why,
     reminderMinutes: reminderMinutes ?? this.reminderMinutes,
     createdAt: createdAt ?? this.createdAt,
+    emoji: emoji ?? this.emoji,
+    templateId: identical(templateId, _keep)
+        ? this.templateId
+        : templateId as String?,
+    quizQuitDay: identical(quizQuitDay, _keep)
+        ? this.quizQuitDay
+        : quizQuitDay as QuitDayAnswer?,
+    quizReason: identical(quizReason, _keep)
+        ? this.quizReason
+        : quizReason as QuitReason?,
   );
 
   @override
@@ -39,10 +66,24 @@ class Habit {
       other.tiny == tiny &&
       other.why == why &&
       other.reminderMinutes == reminderMinutes &&
-      other.createdAt == createdAt;
+      other.createdAt == createdAt &&
+      other.emoji == emoji &&
+      other.templateId == templateId &&
+      other.quizQuitDay == quizQuitDay &&
+      other.quizReason == quizReason;
 
   @override
-  int get hashCode => Object.hash(name, tiny, why, reminderMinutes, createdAt);
+  int get hashCode => Object.hash(
+    name,
+    tiny,
+    why,
+    reminderMinutes,
+    createdAt,
+    emoji,
+    templateId,
+    quizQuitDay,
+    quizReason,
+  );
 }
 
 class Attempt {
@@ -192,27 +233,40 @@ class Clip {
 
 enum HomeStyle { bigNumber, road }
 
+/// How the user marks a day done on Home.
+enum CheckInMode { slide, tap }
+
 class Flags {
   const Flags({
     required this.day4Celebrated,
     required this.lastWeeklyReplayDayNumber,
     required this.homeStyle,
+    this.checkInMode = CheckInMode.slide,
+    this.tipsSeen = false,
   });
 
   final bool day4Celebrated;
   final int? lastWeeklyReplayDayNumber;
   final HomeStyle homeStyle;
+  final CheckInMode checkInMode;
+
+  /// The one-time Home tips were dismissed.
+  final bool tipsSeen;
 
   Flags copyWith({
     bool? day4Celebrated,
     Object? lastWeeklyReplayDayNumber = _keep,
     HomeStyle? homeStyle,
+    CheckInMode? checkInMode,
+    bool? tipsSeen,
   }) => Flags(
     day4Celebrated: day4Celebrated ?? this.day4Celebrated,
     lastWeeklyReplayDayNumber: identical(lastWeeklyReplayDayNumber, _keep)
         ? this.lastWeeklyReplayDayNumber
         : lastWeeklyReplayDayNumber as int?,
     homeStyle: homeStyle ?? this.homeStyle,
+    checkInMode: checkInMode ?? this.checkInMode,
+    tipsSeen: tipsSeen ?? this.tipsSeen,
   );
 
   @override
@@ -220,11 +274,18 @@ class Flags {
       other is Flags &&
       other.day4Celebrated == day4Celebrated &&
       other.lastWeeklyReplayDayNumber == lastWeeklyReplayDayNumber &&
-      other.homeStyle == homeStyle;
+      other.homeStyle == homeStyle &&
+      other.checkInMode == checkInMode &&
+      other.tipsSeen == tipsSeen;
 
   @override
-  int get hashCode =>
-      Object.hash(day4Celebrated, lastWeeklyReplayDayNumber, homeStyle);
+  int get hashCode => Object.hash(
+    day4Celebrated,
+    lastWeeklyReplayDayNumber,
+    homeStyle,
+    checkInMode,
+    tipsSeen,
+  );
 }
 
 enum RescueReason { none, quitDay, paused, afterMiss }

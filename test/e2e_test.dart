@@ -17,6 +17,8 @@ import 'package:stick/services/clip_recorder.dart';
 import 'package:stick/ui/replay/clip_player.dart';
 import 'package:stick/ui/replay/replay_screen.dart';
 
+import 'support/home_helpers.dart';
+
 class _Sink implements ReminderSink {
   @override
   Future<void> reschedule(Snapshot? s, DateTime now) async {}
@@ -101,7 +103,7 @@ void main() {
   }
 
   Future<void> checkIn(WidgetTester t) async {
-    await t.tap(find.text('Done today'));
+    await slideToCheckIn(t);
     await settle(t);
   }
 
@@ -112,22 +114,30 @@ void main() {
     await t.pumpWidget(StickScope(controller: c, child: const StickApp()));
 
     // Setup.
-    expect(find.text('Step 1 of 3'), findsOneWidget);
-    await t.enterText(find.byType(TextField), 'Walk');
-    await t.pump();
-    await t.tap(find.text('Next'));
-    await t.pump();
-    await t.tap(find.text('Next'));
-    await t.pump();
+    expect(find.text('Built for the day you quit.'), findsOneWidget);
+    Future<void> tapText(String text) async {
+      await t.tap(find.text(text).last);
+      await t.pumpAndSettle();
+    }
+
+    await tapText('Start');
+    await tapText('Skip');
+    await tapText('Skip');
+    await tapText('Walk');
+    await t.enterText(find.byKey(const Key('habit-tiny')), '');
+    await tapText('Continue');
     await t.enterText(find.byType(TextField), 'Head clear');
-    await t.pump();
-    await t.tap(find.text('Start'));
+    await tapText('Continue');
+    await tapText('Continue');
+    await settle(t);
+    await tapText('Got it');
+    await tapText('I promise');
     await settle(t);
     expect(find.text('Attempt 1 · Day 1'), findsOneWidget);
 
     // Three days in a row.
     await checkIn(t);
-    expect(find.text('Done for today'), findsOneWidget);
+    expect(find.text('Done for today ✓'), findsOneWidget);
     await goTo(t, DateTime(2026, 11, 21, 12));
     await checkIn(t);
     await goTo(t, DateTime(2026, 11, 22, 12));
@@ -161,7 +171,12 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.text('Start new attempt'));
     await settle(t);
-    await t.pageBack();
+    await t.tap(
+      find.descendant(
+        of: find.byType(NavigationBar),
+        matching: find.text('Home'),
+      ),
+    );
     await t.pumpAndSettle();
     expect(c.home!.attemptNumber, 2);
     expect(c.home!.quitTarget, 4);
@@ -207,6 +222,44 @@ void main() {
 
     testWidgets('payload replay opens the replay on a cold start', (t) async {
       await boot(t, 'replay');
+      expect(find.byType(ReplayScreen), findsOneWidget);
+    });
+
+    testWidgets('a replay launch waits until the app has loaded', (t) async {
+      await t.runAsync(() async {
+        await c.open();
+        await c.createHabit(name: 'Walk', why: 'x', reminderMinutes: 1140);
+        final files = ClipFiles(tmp);
+        final path = files.newPath(ClipType.voice, now);
+        File(path).writeAsBytesSync([1, 2, 3]);
+        await c.addClip(ClipType.voice, path, 3000);
+      });
+      // A fresh controller that is still loading when the app starts.
+      final fresh = StickController(
+        repo: StickRepository(db),
+        clock: () => now,
+        reminders: _Sink(),
+        clipFiles: ClipFiles(tmp),
+      );
+      final ready = Completer<void>();
+      await t.pumpWidget(
+        StickLifecycle(
+          controller: fresh,
+          files: ClipFiles(tmp),
+          recorder: _Recorder(),
+          launchPayload: () async => 'replay',
+          playerFactory: _Player.new,
+          ready: ready.future,
+        ),
+      );
+      await settle(t);
+      expect(find.byType(ReplayScreen), findsNothing);
+      await t.runAsync(() async {
+        await fresh.open();
+        ready.complete();
+      });
+      await settle(t);
+      await settle(t);
       expect(find.byType(ReplayScreen), findsOneWidget);
     });
 

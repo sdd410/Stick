@@ -5,6 +5,7 @@ import 'controller/stick_controller.dart';
 import 'controller/stick_scope.dart';
 import 'services/clip_files.dart';
 import 'services/clip_recorder.dart';
+import 'services/splash_gate.dart';
 import 'ui/replay/clip_player.dart';
 
 /// Hosts the app: re-opens (reload + reschedule) whenever it returns to the
@@ -17,7 +18,16 @@ class StickLifecycle extends StatefulWidget {
     required this.recorder,
     required this.launchPayload,
     this.playerFactory = videoPlayerClipPlayer,
+    this.ready,
+    this.splash,
   });
+
+  /// See [StickApp.splash].
+  final SplashGate? splash;
+
+  /// Completes once the first load is done (main loads behind the intro
+  /// instead of before the first frame). Null means already loaded.
+  final Future<void>? ready;
 
   final StickController controller;
   final ClipFiles files;
@@ -40,6 +50,7 @@ class _StickLifecycleState extends State<StickLifecycle>
     // Launched by tapping a reminder: act once the navigator exists.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
+        await widget.ready;
         if (await widget.launchPayload() == 'replay') {
           await openReplayFromNotification(
             widget.files,
@@ -70,6 +81,11 @@ class _StickLifecycleState extends State<StickLifecycle>
   @override
   Widget build(BuildContext context) => StickScope(
     controller: widget.controller,
-    child: StickApp(recorder: widget.recorder, files: widget.files),
+    child: StickApp(
+      recorder: widget.recorder,
+      files: widget.files,
+      showIntro: true,
+      splash: widget.splash,
+    ),
   );
 }

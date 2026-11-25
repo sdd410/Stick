@@ -74,6 +74,54 @@
             "default_dart": null,
             "default_client_dart": null,
             "dsl_features": []
+          },
+          {
+            "name": "emoji",
+            "getter_name": "emoji",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": "const CustomExpression('\\'⭐\\'')",
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "template_id",
+            "getter_name": "templateId",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "quiz_quit_day",
+            "getter_name": "quizQuitDay",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [],
+            "type_converter": {
+              "dart_expr": "const EnumNameConverter<QuitDayAnswer>(QuitDayAnswer.values)",
+              "dart_type_name": "QuitDayAnswer"
+            }
+          },
+          {
+            "name": "quiz_reason",
+            "getter_name": "quizReason",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [],
+            "type_converter": {
+              "dart_expr": "const EnumNameConverter<QuitReason>(QuitReason.values)",
+              "dart_type_name": "QuitReason"
+            }
           }
         ],
         "is_virtual": false,
@@ -390,6 +438,34 @@
               "dart_expr": "const EnumNameConverter<HomeStyle>(HomeStyle.values)",
               "dart_type_name": "HomeStyle"
             }
+          },
+          {
+            "name": "check_in_mode",
+            "getter_name": "checkInMode",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": "const CustomExpression('\\'slide\\'')",
+            "default_client_dart": null,
+            "dsl_features": [],
+            "type_converter": {
+              "dart_expr": "const EnumNameConverter<CheckInMode>(CheckInMode.values)",
+              "dart_type_name": "CheckInMode"
+            }
+          },
+          {
+            "name": "tips_seen",
+            "getter_name": "tipsSeen",
+            "moor_type": "bool",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "CHECK (\"tips_seen\" IN (0, 1))",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "CHECK (\"tips_seen\" IN (0, 1))"
+            },
+            "default_dart": "const CustomExpression('0')",
+            "default_client_dart": null,
+            "dsl_features": []
           }
         ],
         "is_virtual": false,
@@ -407,7 +483,7 @@
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"habits\" (\"id\" INTEGER NOT NULL, \"name\" TEXT NOT NULL, \"tiny\" TEXT NULL, \"why\" TEXT NOT NULL, \"reminder_minutes\" INTEGER NOT NULL, \"created_at\" INTEGER NOT NULL, PRIMARY KEY (\"id\"));"
+          "sql": "CREATE TABLE IF NOT EXISTS \"habits\" (\"id\" INTEGER NOT NULL, \"name\" TEXT NOT NULL, \"tiny\" TEXT NULL, \"why\" TEXT NOT NULL, \"reminder_minutes\" INTEGER NOT NULL, \"created_at\" INTEGER NOT NULL, \"emoji\" TEXT NOT NULL DEFAULT '⭐', \"template_id\" TEXT NULL, \"quiz_quit_day\" TEXT NULL, \"quiz_reason\" TEXT NULL, PRIMARY KEY (\"id\"));"
         }
       ]
     },
@@ -443,7 +519,7 @@
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"flags\" (\"id\" INTEGER NOT NULL, \"day4_celebrated\" INTEGER NOT NULL DEFAULT 0 CHECK (\"day4_celebrated\" IN (0, 1)), \"last_weekly_replay_day_number\" INTEGER NULL, \"home_style\" TEXT NOT NULL DEFAULT 'bigNumber', PRIMARY KEY (\"id\"));"
+          "sql": "CREATE TABLE IF NOT EXISTS \"flags\" (\"id\" INTEGER NOT NULL, \"day4_celebrated\" INTEGER NOT NULL DEFAULT 0 CHECK (\"day4_celebrated\" IN (0, 1)), \"last_weekly_replay_day_number\" INTEGER NULL, \"home_style\" TEXT NOT NULL DEFAULT 'bigNumber', \"check_in_mode\" TEXT NOT NULL DEFAULT 'slide', \"tips_seen\" INTEGER NOT NULL DEFAULT 0 CHECK (\"tips_seen\" IN (0, 1)), PRIMARY KEY (\"id\"));"
         }
       ]
     }

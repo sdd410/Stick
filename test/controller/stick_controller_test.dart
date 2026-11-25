@@ -8,6 +8,7 @@ import 'package:stick/controller/stick_controller.dart';
 import 'package:stick/data/database.dart' as db_;
 import 'package:stick/data/repository.dart';
 import 'package:stick/domain/models.dart';
+import 'package:stick/domain/onboarding.dart';
 import 'package:stick/services/clip_files.dart';
 
 class CountingSink implements ReminderSink {
@@ -50,6 +51,49 @@ void main() {
     why: 'Head',
     reminderMinutes: 1140,
   );
+
+  test('createHabit passes emoji and quiz answers through', () async {
+    await c.open();
+    await c.createHabit(
+      name: 'Read',
+      why: 'x',
+      reminderMinutes: 1140,
+      emoji: '📖',
+      templateId: 'read',
+      quizQuitDay: QuitDayAnswer.day2,
+      quizReason: QuitReason.busy,
+    );
+    final h = c.snapshot!.habit;
+    expect(h.emoji, '📖');
+    expect(h.templateId, 'read');
+    expect(h.quizQuitDay, QuitDayAnswer.day2);
+    expect(h.quizReason, QuitReason.busy);
+  });
+
+  test('updateHabit keeps emoji and quiz answers', () async {
+    await c.open();
+    await c.createHabit(
+      name: 'Read',
+      why: 'x',
+      reminderMinutes: 1140,
+      emoji: '📖',
+      quizReason: QuitReason.tired,
+    );
+    await c.updateHabit(name: 'Read more', why: 'y', reminderMinutes: 600);
+    final h = c.snapshot!.habit;
+    expect(h.name, 'Read more');
+    expect(h.emoji, '📖');
+    expect(h.quizReason, QuitReason.tired);
+  });
+
+  test('setCheckInMode and markTipsSeen update the flags', () async {
+    await c.open();
+    await setup();
+    await c.setCheckInMode(CheckInMode.tap);
+    await c.markTipsSeen();
+    expect(c.snapshot!.flags.checkInMode, CheckInMode.tap);
+    expect(c.snapshot!.flags.tipsSeen, isTrue);
+  });
 
   test('needs setup on an empty database', () async {
     expect(c.needsSetup, isFalse); // not loaded yet

@@ -4,6 +4,7 @@ import 'controller/stick_scope.dart';
 import 'domain/battery_tip.dart';
 import 'services/clip_files.dart';
 import 'services/device_info.dart';
+import 'services/splash_gate.dart';
 
 import 'package:permission_handler/permission_handler.dart';
 
@@ -15,11 +16,14 @@ import 'ui/replay/clip_list_screen.dart';
 import 'ui/replay/clip_player.dart';
 import 'ui/replay/replay_screen.dart';
 import 'ui/home/home_screen.dart';
+import 'ui/intro/logo_intro.dart';
 import 'ui/progress/progress_screen.dart';
 import 'ui/record/record_screen.dart';
 import 'ui/settings/battery_tip_card.dart';
 import 'ui/settings/settings_screen.dart';
 import 'ui/setup/setup_flow.dart';
+import 'ui/shell/home_shell.dart';
+import 'ui/timer/tiny_timer_screen.dart';
 
 /// Opens the story-style replay. Task 10 (notification) and Task 12 (fresh
 /// start) call this. Pass [clips] to play specific ones instead of the pick.
@@ -67,7 +71,16 @@ class StickApp extends StatelessWidget {
     this.files,
     this.manufacturer = readDeviceManufacturer,
     this.openSystemSettings = openAppSettings,
+    this.showIntro = false,
+    this.splash,
   });
+
+  /// Lets the intro wait for Android's splash and match the icon shape.
+  final SplashGate? splash;
+
+  /// Plays the logo intro once when the app starts (main sets it; tests
+  /// leave it off).
+  final bool showIntro;
 
   /// Injectable so tests never touch the platform channel.
   final Future<String> Function() manufacturer;
@@ -85,6 +98,8 @@ class StickApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: stickTheme(),
       home: _Root(
+        showIntro: showIntro,
+        splash: splash,
         recorder: recorder,
         files: files,
         manufacturer: manufacturer,
@@ -96,6 +111,8 @@ class StickApp extends StatelessWidget {
 
 class _Root extends StatefulWidget {
   const _Root({
+    required this.showIntro,
+    this.splash,
     this.recorder,
     this.files,
     required this.manufacturer,
@@ -106,14 +123,28 @@ class _Root extends StatefulWidget {
   final ClipFiles? files;
   final Future<String> Function() manufacturer;
   final OpenSystemSettings openSystemSettings;
+  final bool showIntro;
+  final SplashGate? splash;
 
   @override
   State<_Root> createState() => _RootState();
 }
 
 class _RootState extends State<_Root> {
+  // Once per process: the state lives as long as the app does.
+  late bool _introDone = !widget.showIntro;
+
   // Setup stays on screen after the habit exists, for the optional first clip.
   bool _inSetup = false;
+
+  /// The selected bottom tab (0 = Home).
+  final _tab = ValueNotifier<int>(0);
+
+  @override
+  void dispose() {
+    _tab.dispose();
+    super.dispose();
+  }
 
   // Buttons whose pushed screen is still open; a second tap is ignored.
   final _open = <String>{};
@@ -139,36 +170,24 @@ class _RootState extends State<_Root> {
     ),
   );
 
-  void _openClipList() {
-    final files = widget.files!;
-    Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        builder: (ctx) => ClipListScreen(
-          onPlay: (clip) => openReplay(ctx, files: files, clips: [clip]),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _openSettings() {
-    final files = widget.files;
-    return _once(
-      'settings',
-      () => Navigator.of(context).push<void>(
-        MaterialPageRoute(
-          builder: (ctx) => SettingsScreen(
-            readManufacturer: widget.manufacturer,
-            openSystemSettings: widget.openSystemSettings,
-            onManageClips: files == null ? null : _openClipList,
-            onPlayReplay: files == null
-                ? null
-                : (headline) =>
-                      openReplay(ctx, files: files, headline: headline),
+  /// The 2-minute tiny-version timer; finishing it checks the day in.
+  Future<void> _openTimer(Future<void> Function() checkIn) =>
+      _once('timer', () {
+        final c = StickScope.of(context);
+        final habit = c.snapshot?.habit;
+        if (habit == null) return Future<void>.value();
+        final t = habit.tiny?.trim();
+        return Navigator.of(context).push<void>(
+          MaterialPageRoute(
+            builder: (_) => TinyTimerScreen(
+              emoji: habit.emoji,
+              name: habit.name,
+              tinyText: (t == null || t.isEmpty) ? 'Show up for 2 minutes' : t,
+              onComplete: checkIn,
+            ),
           ),
-        ),
-      ),
-    );
-  }
+        );
+      });
 
   /// Once, right after setup, on phones that kill background reminders.
   Future<void> _maybeShowBatteryTip() async {
@@ -188,22 +207,6 @@ class _RootState extends State<_Root> {
     );
   }
 
-  Future<void> _openProgress() {
-    final files = widget.files;
-    return _once(
-      'progress',
-      () => Navigator.of(context).push<void>(
-        MaterialPageRoute(
-          builder: (ctx) => ProgressScreen(
-            onOpenReplay: files == null
-                ? null
-                : () => openReplay(ctx, files: files),
-          ),
-        ),
-      ),
-    );
-  }
-
   void _retry() {
     StickScope.of(context)
         .open()
@@ -213,6 +216,14 @@ class _RootState extends State<_Root> {
   @override
   Widget build(BuildContext context) {
     final c = StickScope.of(context);
+    if (!_introDone) {
+      return LogoIntro(
+        splash: widget.splash,
+        // Hold the logo until the first load is done (or failed).
+        waiting: !c.loaded && c.loadError == null,
+        onDone: () => setState(() => _introDone = true),
+      );
+    }
     if (!c.loaded) {
       if (c.loadError != null) return _LoadErrorScreen(onRetry: _retry);
       return const Scaffold();
@@ -222,19 +233,44 @@ class _RootState extends State<_Root> {
       return SetupFlow(
         onRecordFirstClip: _canRecord ? _openRecord : null,
         onFinished: () {
+          _tab.value = 0;
           setState(() => _inSetup = false);
           _maybeShowBatteryTip();
         },
       );
     }
-    return HomeScreen(
-      onOpenProgress: _openProgress,
-      onOpenSettings: _openSettings,
-      onAddMessage: _canRecord ? _openRecord : null,
-      onPlayReplay: widget.files == null
-          ? null
-          : () => openReplay(context, files: widget.files!),
-      onSeeAll: widget.files == null ? null : _openClipList,
+    final files = widget.files;
+    void replay() {
+      if (files != null) openReplay(context, files: files);
+    }
+
+    return HomeShell(
+      tab: _tab,
+      home: HomeScreen(
+        onOpenProgress: () => _tab.value = 1,
+        onOpenTimer: _openTimer,
+        onAddMessage: _canRecord ? _openRecord : null,
+        onPlayReplay: files == null ? null : replay,
+      ),
+      progress: ProgressScreen(
+        onOpenReplay: files == null ? null : replay,
+        onBack: () => _tab.value = 0,
+      ),
+      messages: ClipListScreen(
+        onPlay: (clip) {
+          if (files != null) openReplay(context, files: files, clips: [clip]);
+        },
+        onPlayAll: files == null ? null : replay,
+        onAddMessage: _canRecord ? _openRecord : null,
+      ),
+      settings: SettingsScreen(
+        readManufacturer: widget.manufacturer,
+        openSystemSettings: widget.openSystemSettings,
+        onPlayReplay: files == null
+            ? null
+            : (headline) =>
+                  openReplay(context, files: files, headline: headline),
+      ),
     );
   }
 }

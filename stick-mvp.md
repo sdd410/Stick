@@ -172,3 +172,8 @@ Pick (done) → Reality check → Design → Build → Test → Launch. One reel
 - Progress screen: free, opened from the counter, never shows missed days.
 - Waitlist: the Google Form in bio.
 - Day 4 share card: after the closed test.
+
+## Decisions (25 Nov 2026, friendlier app, see `docs/superpowers/specs/2026-11-25-friendly-update-design.md`)
+- Onboarding quiz: "When do you usually quit?" sets the first attempt's quit day (Day 1/2/3 → 1/2/3, a week or two → 7, not sure → 3) for the rescue and "Get past Day N"; after the first miss the learned day takes over. "Why do you usually stop?" picks the rescue hint.
+- Check-in is a slide by default, with tap available in Settings (Check-in: Slide / Tap).
+- "See all" and "Add a message" moved into a Messages tab. Everything ships together as 1.1.
