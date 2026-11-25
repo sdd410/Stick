@@ -38,7 +38,9 @@ A small Android app (Flutter) for people who quit new habits by day 3. Read this
 - Tests: `flutter test`.
 - Checks: `flutter analyze --no-fatal-infos` and `dart format lib test`.
 - After changing a drift table: `dart run build_runner build --delete-conflicting-outputs`. Commit the generated code and dump the schema to `drift_schemas/`.
-- PR checks (`.github/workflows/pr-checks.yml`, on PRs into `main`) fail if:
+- Branches: `develop` is the base branch (PRs target it, releases to testers); `master` is what is live (release PR from `develop`, the only branch that may release to production). See `docs/RELEASING.md`.
+- Releases: GitHub Actions → "Release to Play" (`.github/workflows/release.yml`), run by hand with a version name and a track; it builds the signed `.aab`, uploads it to Play as a draft and tags `v<version>`. Needs `docs/release-notes/<version>.txt`.
+- PR checks (`.github/workflows/pr-checks.yml`, on PRs into `develop` and `master`) fail if:
   - a key file is committed (`key.properties`, `*.jks`, `*.keystore`, `local.properties`);
   - formatting is off, or the generated code is stale;
   - analyze reports warnings, or tests fail;

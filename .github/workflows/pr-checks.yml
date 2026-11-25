@@ -1,4 +1,5 @@
-# PR checks for Stick. Runs on every pull request into main.
+# PR checks for Stick. Runs on every pull request into develop (the base
+# branch) and master (what is live).
 # Three jobs, each shown as its own check on the PR:
 #   Sanity      - lockfile respected, no signing secrets, formatting, generated code up to date
 #   Code check  - static analysis (warnings/errors fail; infos don't) and the full test suite
@@ -7,7 +8,7 @@ name: PR checks
 
 on:
   pull_request:
-    branches: [main]
+    branches: [develop, master]
   workflow_dispatch:
 
 concurrency:
