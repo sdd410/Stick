@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../controller/stick_controller.dart';
 import '../../controller/stick_scope.dart';
+import '../../domain/onboarding.dart';
 import '../../domain/habit_engine.dart';
 import '../../domain/models.dart';
 import '../../theme.dart';
@@ -261,6 +262,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                 textAlign: TextAlign.center,
                                 style: textTheme.bodyLarge,
                               ),
+                              if (reasonHint(snap.habit.quizReason)
+                                  case final hint?) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  hint,
+                                  textAlign: TextAlign.center,
+                                  style: textTheme.bodyMedium?.copyWith(
+                                    color: StickColors.muted,
+                                  ),
+                                ),
+                              ],
                               const SizedBox(height: 20),
                               if (showReplay)
                                 OutlinedButton(

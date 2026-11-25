@@ -9,6 +9,7 @@ import 'package:stick/controller/stick_scope.dart';
 import 'package:stick/data/database.dart' as db_;
 import 'package:stick/data/repository.dart';
 import 'package:stick/domain/models.dart';
+import 'package:stick/domain/onboarding.dart';
 import 'package:stick/theme.dart';
 import 'package:stick/ui/home/home_screen.dart';
 
@@ -71,6 +72,7 @@ Snapshot snap({
   String why = 'Be healthier',
   String name = 'Walk',
   HomeStyle homeStyle = HomeStyle.bigNumber,
+  QuitReason? quizReason,
 }) => Snapshot(
   habit: Habit(
     name: name,
@@ -78,6 +80,7 @@ Snapshot snap({
     why: why,
     reminderMinutes: 1140,
     createdAt: DateTime(2026, 11, 1),
+    quizReason: quizReason,
   ),
   current: Attempt(number: 1, startDay: '2026-11-01', quitTarget: 5),
   ended: const [],
@@ -180,6 +183,32 @@ void main() {
     await pump(t, state(day: 3, rescue: RescueReason.quitDay));
     expect(find.text('Just do this. Get to day 4.'), findsOneWidget);
     expect(find.text('Just show up for 2 minutes.'), findsOneWidget);
+  });
+
+  testWidgets('rescue shows the hint for the quiz reason', (t) async {
+    await pump(
+      t,
+      state(day: 3, rescue: RescueReason.quitDay),
+      sn: snap(quizReason: QuitReason.tired),
+    );
+    expect(
+      find.text('Too tired? The tiny version is enough today.'),
+      findsOneWidget,
+    );
+    expect(find.text('Just do this. Get to day 4.'), findsOneWidget);
+  });
+
+  testWidgets('no quiz reason, no hint', (t) async {
+    await pump(t, state(day: 3, rescue: RescueReason.quitDay));
+    for (final r in QuitReason.values) {
+      final hint = reasonHint(r);
+      if (hint != null) expect(find.text(hint), findsNothing);
+    }
+  });
+
+  testWidgets('the hint only shows on a rescue day', (t) async {
+    await pump(t, state(day: 2), sn: snap(quizReason: QuitReason.busy));
+    expect(find.text('Too busy? Two minutes still counts.'), findsNothing);
   });
 
   testWidgets('rescue uses the custom tiny habit', (t) async {
