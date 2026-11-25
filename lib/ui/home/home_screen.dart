@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 
 import '../../controller/stick_controller.dart';
 import '../../controller/stick_scope.dart';
-import '../../domain/habit_engine.dart';
 import '../../data/repository.dart' show Snapshot;
 import '../../domain/models.dart' hide Clip;
 import '../../domain/onboarding.dart';
@@ -220,7 +219,7 @@ class _HomeScreenState extends State<HomeScreen>
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               _topRow(home),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 12),
                               WeekStripView(
                                 days: weekStrip(
                                   c.today,
@@ -272,7 +271,7 @@ class _HomeScreenState extends State<HomeScreen>
                                           style: textTheme.titleMedium,
                                         ),
                                       ],
-                                      const SizedBox(height: 16),
+                                      SizedBox(height: showRescue ? 8 : 16),
                                       _card(
                                         context,
                                         snap: snap,
@@ -281,7 +280,7 @@ class _HomeScreenState extends State<HomeScreen>
                                         showReplay: showReplay,
                                         noMotion: noMotion,
                                       ),
-                                      const SizedBox(height: 16),
+                                      const SizedBox(height: 8),
                                     ],
                                   ),
                                 ),
@@ -417,12 +416,12 @@ class _HomeScreenState extends State<HomeScreen>
             ? HomeRoad(state: shown)
             : FittedBox(
                 fit: BoxFit.scaleDown,
-                child: HomeBigNumber(state: shown),
+                child: HomeBigNumber(state: shown, compact: showRescue),
               );
       },
     );
     final card = Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
       decoration: BoxDecoration(
         color: const Color(0xFF16161F),
         borderRadius: BorderRadius.circular(24),
@@ -452,39 +451,56 @@ class _HomeScreenState extends State<HomeScreen>
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: showRescue ? 8 : 16),
           number,
           if (showRescue) ...[
-            const SizedBox(height: 20),
+            const SizedBox(height: 14),
             Text(
               'Just do this. Get to day ${home.dayNumber + 1}.',
               textAlign: TextAlign.center,
-              style: textTheme.headlineSmall?.copyWith(fontSize: 20),
+              style: textTheme.headlineSmall?.copyWith(fontSize: 18),
             ),
-            const SizedBox(height: 8),
-            Text(
-              tinyLine(snap.habit),
-              textAlign: TextAlign.center,
-              style: textTheme.bodyLarge,
-            ),
-            if (hint != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                hint,
-                textAlign: TextAlign.center,
-                style: textTheme.bodyMedium?.copyWith(color: StickColors.muted),
+            const SizedBox(height: 10),
+            // The tiny version, once, as a highlighted line.
+            Align(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: StickColors.lime.withValues(alpha: 0.12),
+                  border: Border.all(
+                    color: StickColors.lime.withValues(alpha: 0.6),
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Text(
+                  _tinyText(snap.habit.tiny),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    fontVariations: [FontVariation('wght', 600)],
+                  ),
+                ),
               ),
-            ],
-            if (!showReplay && snap.habit.why.isNotEmpty) ...[
+            ),
+            // One quiet line: the quiz hint, or else the reason.
+            if (hint ?? (showReplay ? null : _nonEmpty(snap.habit.why))
+                case final line?) ...[
               const SizedBox(height: 8),
               Text(
-                snap.habit.why,
+                line,
                 textAlign: TextAlign.center,
-                style: textTheme.bodyMedium?.copyWith(color: StickColors.muted),
+                style: textTheme.bodySmall?.copyWith(
+                  color: StickColors.muted,
+                  fontSize: 13,
+                ),
               ),
             ],
             if (widget.onOpenTimer != null || showReplay) ...[
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Wrap(
                 alignment: WrapAlignment.center,
                 spacing: 8,
@@ -529,6 +545,13 @@ class _HomeScreenState extends State<HomeScreen>
       ],
     );
   }
+
+  static String _tinyText(String? tiny) {
+    final t = tiny?.trim();
+    return (t == null || t.isEmpty) ? 'Show up for 2 minutes' : t;
+  }
+
+  static String? _nonEmpty(String s) => s.trim().isEmpty ? null : s;
 
   Widget _checkInControl(StickController c, HomeState home, CheckInMode mode) {
     const big = TextStyle(

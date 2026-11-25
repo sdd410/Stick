@@ -14,7 +14,9 @@ import 'package:stick/domain/day_clock.dart';
 import 'package:stick/domain/onboarding.dart';
 import 'package:stick/domain/week_strip.dart';
 import 'package:stick/theme.dart';
+import 'package:stick/ui/home/home_big_number.dart';
 import 'package:stick/ui/home/home_screen.dart';
+import 'package:stick/ui/home/slide_to_check_in.dart';
 import 'package:stick/ui/home/week_strip_view.dart';
 
 import '../support/home_helpers.dart';
@@ -218,7 +220,7 @@ void main() {
   testWidgets('rescue shows tiny version and Get to day 4', (t) async {
     await pump(t, state(day: 3, rescue: RescueReason.quitDay));
     expect(find.text('Just do this. Get to day 4.'), findsOneWidget);
-    expect(find.text('Just show up for 2 minutes.'), findsOneWidget);
+    expect(find.text('Show up for 2 minutes'), findsOneWidget);
   });
 
   testWidgets('rescue shows the hint for the quiz reason', (t) async {
@@ -253,7 +255,7 @@ void main() {
       state(day: 3, rescue: RescueReason.afterMiss),
       sn: snap(tiny: 'Put on shoes'),
     );
-    expect(find.text('Just do this: Put on shoes.'), findsOneWidget);
+    expect(find.text('Put on shoes'), findsOneWidget);
   });
 
   testWidgets('learned quit day shows Last time you stopped on Day 5. '
@@ -287,7 +289,7 @@ void main() {
       onPlayReplay: () {},
     );
     expect(find.text(''), findsNothing);
-    expect(find.text('Just show up for 2 minutes.'), findsOneWidget);
+    expect(find.text('Show up for 2 minutes'), findsOneWidget);
   });
 
   testWidgets('rescue without clips shows why text', (t) async {
@@ -593,6 +595,59 @@ void main() {
     );
     expect(t.takeException(), isNull);
     expect(find.byKey(const Key('slide-knob')).hitTestable(), findsOneWidget);
+  });
+
+  testWidgets('rescue does not repeat "Just do this"', (t) async {
+    await pump(
+      t,
+      state(day: 3, rescue: RescueReason.quitDay),
+      sn: snap(tiny: 'Take three slow breaths'),
+    );
+    expect(find.textContaining('Just do this'), findsOneWidget);
+    expect(find.text('Take three slow breaths'), findsOneWidget);
+  });
+
+  testWidgets('the number is compact on a rescue day only', (t) async {
+    await pump(t, state(day: 3, rescue: RescueReason.quitDay));
+    expect(t.widget<HomeBigNumber>(find.byType(HomeBigNumber)).compact, isTrue);
+    await pump(t, state(day: 2));
+    expect(
+      t.widget<HomeBigNumber>(find.byType(HomeBigNumber)).compact,
+      isFalse,
+    );
+  });
+
+  testWidgets('on a Galaxy S22 the rescue card sits fully above the slide', (
+    t,
+  ) async {
+    t.view.physicalSize = const Size(360, 620); // Home's body on an S22
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    await pump(
+      t,
+      state(day: 1, rescue: RescueReason.quitDay),
+      sn: Snapshot(
+        habit: snap(
+          name: 'Meditate',
+          emoji: '🧘',
+          tiny: 'Take three slow breaths',
+          quizReason: QuitReason.bored,
+        ).habit,
+        current: snap().current,
+        ended: const [],
+        allCheckIns: const [],
+        clips: const [],
+        flags: snap(checkInMode: CheckInMode.slide).flags,
+      ),
+      onOpenTimer: (_) {},
+    );
+    final card = t.getRect(
+      find
+          .ancestor(of: find.text('Meditate'), matching: find.byType(Container))
+          .first,
+    );
+    final slide = t.getRect(find.byType(SlideToCheckIn));
+    expect(card.bottom, lessThanOrEqualTo(slide.top - 8));
   });
 
   group('tips', () {
