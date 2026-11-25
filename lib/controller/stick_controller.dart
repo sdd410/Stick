@@ -281,6 +281,12 @@ class StickController extends ChangeNotifier {
   Future<void> setHomeStyle(HomeStyle s) =>
       _setFlags((f, _) => f.copyWith(homeStyle: s));
 
+  Future<void> setCheckInMode(CheckInMode m) =>
+      _setFlags((f, _) => f.copyWith(checkInMode: m));
+
+  Future<void> markTipsSeen() =>
+      _setFlags((f, _) => f.copyWith(tipsSeen: true));
+
   Future<void> _setFlags(Flags Function(Flags, HomeState?) change) =>
       _run(() async {
         final s = _snapshot;

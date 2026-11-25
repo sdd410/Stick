@@ -5,7 +5,7 @@ import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
-import '../domain/models.dart' show ClipType, HomeStyle;
+import '../domain/models.dart' show CheckInMode, ClipType, HomeStyle;
 import '../domain/onboarding.dart' show QuitDayAnswer, QuitReason, defaultEmoji;
 
 part 'database.g.dart';
@@ -79,6 +79,9 @@ class Flags extends Table {
   IntColumn get lastWeeklyReplayDayNumber => integer().nullable()();
   TextColumn get homeStyle =>
       textEnum<HomeStyle>().withDefault(const Constant('bigNumber'))();
+  TextColumn get checkInMode =>
+      textEnum<CheckInMode>().withDefault(const Constant('slide'))();
+  BoolColumn get tipsSeen => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -93,6 +96,18 @@ class StickDatabase extends _$StickDatabase {
   @override
   int get schemaVersion => 1;
 
+  Future<bool> _missesAColumn() async {
+    for (final t in allTables) {
+      final rows = await customSelect(
+        'PRAGMA table_info("${t.actualTableName}")',
+      ).get();
+      if (rows.isEmpty) continue; // not created yet
+      final have = rows.map((r) => r.read<String>('name')).toSet();
+      if (t.$columns.any((c) => !have.contains(c.name))) return true;
+    }
+    return false;
+  }
+
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
@@ -103,13 +118,12 @@ class StickDatabase extends _$StickDatabase {
     onUpgrade: (m, from, to) async {
       throw UnsupportedError('No migration from schema version $from to $to');
     },
-    // A pre-1.1 build also used schema 1 but had no onboarding columns, and
-    // Android Auto Backup can restore that file after a reinstall. Only the
-    // developer's phone ever had it, so start over instead of breaking.
+    // Builds before 1.1 also used schema 1 but lacked columns added since,
+    // and Android Auto Backup can restore such a file after a reinstall.
+    // Only the developer's phone ever had one, so start over instead of
+    // breaking: any declared column missing from an existing table resets.
     beforeOpen: (details) async {
-      final cols = await customSelect('PRAGMA table_info(habits)').get();
-      final hasEmoji = cols.any((r) => r.read<String>('name') == 'emoji');
-      if (cols.isEmpty || hasEmoji) return;
+      if (!await _missesAColumn()) return;
       for (final t in allTables) {
         await customStatement('DROP TABLE IF EXISTS "${t.actualTableName}"');
       }

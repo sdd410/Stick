@@ -233,27 +233,40 @@ class Clip {
 
 enum HomeStyle { bigNumber, road }
 
+/// How the user marks a day done on Home.
+enum CheckInMode { slide, tap }
+
 class Flags {
   const Flags({
     required this.day4Celebrated,
     required this.lastWeeklyReplayDayNumber,
     required this.homeStyle,
+    this.checkInMode = CheckInMode.slide,
+    this.tipsSeen = false,
   });
 
   final bool day4Celebrated;
   final int? lastWeeklyReplayDayNumber;
   final HomeStyle homeStyle;
+  final CheckInMode checkInMode;
+
+  /// The one-time Home tips were dismissed.
+  final bool tipsSeen;
 
   Flags copyWith({
     bool? day4Celebrated,
     Object? lastWeeklyReplayDayNumber = _keep,
     HomeStyle? homeStyle,
+    CheckInMode? checkInMode,
+    bool? tipsSeen,
   }) => Flags(
     day4Celebrated: day4Celebrated ?? this.day4Celebrated,
     lastWeeklyReplayDayNumber: identical(lastWeeklyReplayDayNumber, _keep)
         ? this.lastWeeklyReplayDayNumber
         : lastWeeklyReplayDayNumber as int?,
     homeStyle: homeStyle ?? this.homeStyle,
+    checkInMode: checkInMode ?? this.checkInMode,
+    tipsSeen: tipsSeen ?? this.tipsSeen,
   );
 
   @override
@@ -261,11 +274,18 @@ class Flags {
       other is Flags &&
       other.day4Celebrated == day4Celebrated &&
       other.lastWeeklyReplayDayNumber == lastWeeklyReplayDayNumber &&
-      other.homeStyle == homeStyle;
+      other.homeStyle == homeStyle &&
+      other.checkInMode == checkInMode &&
+      other.tipsSeen == tipsSeen;
 
   @override
-  int get hashCode =>
-      Object.hash(day4Celebrated, lastWeeklyReplayDayNumber, homeStyle);
+  int get hashCode => Object.hash(
+    day4Celebrated,
+    lastWeeklyReplayDayNumber,
+    homeStyle,
+    checkInMode,
+    tipsSeen,
+  );
 }
 
 enum RescueReason { none, quitDay, paused, afterMiss }

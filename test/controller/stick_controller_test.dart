@@ -86,6 +86,15 @@ void main() {
     expect(h.quizReason, QuitReason.tired);
   });
 
+  test('setCheckInMode and markTipsSeen update the flags', () async {
+    await c.open();
+    await setup();
+    await c.setCheckInMode(CheckInMode.tap);
+    await c.markTipsSeen();
+    expect(c.snapshot!.flags.checkInMode, CheckInMode.tap);
+    expect(c.snapshot!.flags.tipsSeen, isTrue);
+  });
+
   test('needs setup on an empty database', () async {
     expect(c.needsSetup, isFalse); // not loaded yet
     await c.open();

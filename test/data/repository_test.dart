@@ -262,6 +262,52 @@ void main() {
     expect((await r.load())!.habit, _habit);
   });
 
+  test(
+    'check-in mode and tips flags round-trip, defaults slide/false',
+    () async {
+      await repo.createHabit(_habit, '2026-11-20');
+      final f = (await repo.load())!.flags;
+      expect(f.checkInMode, CheckInMode.slide);
+      expect(f.tipsSeen, isFalse);
+      await repo.setFlags(
+        f.copyWith(checkInMode: CheckInMode.tap, tipsSeen: true),
+      );
+      final g = (await repo.load())!.flags;
+      expect(g.checkInMode, CheckInMode.tap);
+      expect(g.tipsSeen, isTrue);
+    },
+  );
+
+  test('a database missing the new flag columns is reset too', () async {
+    final old = db_.StickDatabase.forTesting(
+      NativeDatabase.memory(
+        setup: (raw) {
+          raw.execute(
+            'CREATE TABLE habits (id INTEGER NOT NULL PRIMARY KEY, '
+            'name TEXT NOT NULL, tiny TEXT, why TEXT NOT NULL, '
+            'reminder_minutes INTEGER NOT NULL, created_at INTEGER NOT NULL, '
+            "emoji TEXT NOT NULL DEFAULT '⭐', template_id TEXT, "
+            'quiz_quit_day TEXT, quiz_reason TEXT)',
+          );
+          raw.execute(
+            'CREATE TABLE flags (id INTEGER NOT NULL PRIMARY KEY, '
+            'day4_celebrated INTEGER NOT NULL DEFAULT 0, '
+            'last_weekly_replay_day_number INTEGER, '
+            "home_style TEXT NOT NULL DEFAULT 'bigNumber')",
+          );
+          raw.execute(
+            "INSERT INTO habits (id, name, why, reminder_minutes, created_at) "
+            "VALUES (1, 'Walk', 'x', 480, 0)",
+          );
+          raw.execute('INSERT INTO flags (id) VALUES (1)');
+          raw.execute('PRAGMA user_version = 1');
+        },
+      ),
+    );
+    addTearDown(old.close);
+    expect(await StickRepository(old).load(), isNull);
+  });
+
   test('upgrading from an unknown schema version fails loudly', () async {
     final strategy = db.migration;
     expect(

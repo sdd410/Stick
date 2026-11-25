@@ -438,6 +438,34 @@
               "dart_expr": "const EnumNameConverter<HomeStyle>(HomeStyle.values)",
               "dart_type_name": "HomeStyle"
             }
+          },
+          {
+            "name": "check_in_mode",
+            "getter_name": "checkInMode",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": "const CustomExpression('\\'slide\\'')",
+            "default_client_dart": null,
+            "dsl_features": [],
+            "type_converter": {
+              "dart_expr": "const EnumNameConverter<CheckInMode>(CheckInMode.values)",
+              "dart_type_name": "CheckInMode"
+            }
+          },
+          {
+            "name": "tips_seen",
+            "getter_name": "tipsSeen",
+            "moor_type": "bool",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "CHECK (\"tips_seen\" IN (0, 1))",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "CHECK (\"tips_seen\" IN (0, 1))"
+            },
+            "default_dart": "const CustomExpression('0')",
+            "default_client_dart": null,
+            "dsl_features": []
           }
         ],
         "is_virtual": false,
@@ -491,7 +519,7 @@
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"flags\" (\"id\" INTEGER NOT NULL, \"day4_celebrated\" INTEGER NOT NULL DEFAULT 0 CHECK (\"day4_celebrated\" IN (0, 1)), \"last_weekly_replay_day_number\" INTEGER NULL, \"home_style\" TEXT NOT NULL DEFAULT 'bigNumber', PRIMARY KEY (\"id\"));"
+          "sql": "CREATE TABLE IF NOT EXISTS \"flags\" (\"id\" INTEGER NOT NULL, \"day4_celebrated\" INTEGER NOT NULL DEFAULT 0 CHECK (\"day4_celebrated\" IN (0, 1)), \"last_weekly_replay_day_number\" INTEGER NULL, \"home_style\" TEXT NOT NULL DEFAULT 'bigNumber', \"check_in_mode\" TEXT NOT NULL DEFAULT 'slide', \"tips_seen\" INTEGER NOT NULL DEFAULT 0 CHECK (\"tips_seen\" IN (0, 1)), PRIMARY KEY (\"id\"));"
         }
       ]
     }

@@ -1883,11 +1883,38 @@ class $FlagsTable extends Flags with TableInfo<$FlagsTable, Flag> {
         defaultValue: const Constant('bigNumber'),
       ).withConverter<HomeStyle>($FlagsTable.$converterhomeStyle);
   @override
+  late final GeneratedColumnWithTypeConverter<CheckInMode, String> checkInMode =
+      GeneratedColumn<String>(
+        'check_in_mode',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('slide'),
+      ).withConverter<CheckInMode>($FlagsTable.$convertercheckInMode);
+  static const VerificationMeta _tipsSeenMeta = const VerificationMeta(
+    'tipsSeen',
+  );
+  @override
+  late final GeneratedColumn<bool> tipsSeen = GeneratedColumn<bool>(
+    'tips_seen',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("tips_seen" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
   List<GeneratedColumn> get $columns => [
     id,
     day4Celebrated,
     lastWeeklyReplayDayNumber,
     homeStyle,
+    checkInMode,
+    tipsSeen,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1922,6 +1949,12 @@ class $FlagsTable extends Flags with TableInfo<$FlagsTable, Flag> {
         ),
       );
     }
+    if (data.containsKey('tips_seen')) {
+      context.handle(
+        _tipsSeenMeta,
+        tipsSeen.isAcceptableOrUnknown(data['tips_seen']!, _tipsSeenMeta),
+      );
+    }
     return context;
   }
 
@@ -1949,6 +1982,16 @@ class $FlagsTable extends Flags with TableInfo<$FlagsTable, Flag> {
           data['${effectivePrefix}home_style'],
         )!,
       ),
+      checkInMode: $FlagsTable.$convertercheckInMode.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}check_in_mode'],
+        )!,
+      ),
+      tipsSeen: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}tips_seen'],
+      )!,
     );
   }
 
@@ -1959,6 +2002,8 @@ class $FlagsTable extends Flags with TableInfo<$FlagsTable, Flag> {
 
   static JsonTypeConverter2<HomeStyle, String, String> $converterhomeStyle =
       const EnumNameConverter<HomeStyle>(HomeStyle.values);
+  static JsonTypeConverter2<CheckInMode, String, String> $convertercheckInMode =
+      const EnumNameConverter<CheckInMode>(CheckInMode.values);
 }
 
 class Flag extends DataClass implements Insertable<Flag> {
@@ -1966,11 +2011,15 @@ class Flag extends DataClass implements Insertable<Flag> {
   final bool day4Celebrated;
   final int? lastWeeklyReplayDayNumber;
   final HomeStyle homeStyle;
+  final CheckInMode checkInMode;
+  final bool tipsSeen;
   const Flag({
     required this.id,
     required this.day4Celebrated,
     this.lastWeeklyReplayDayNumber,
     required this.homeStyle,
+    required this.checkInMode,
+    required this.tipsSeen,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1987,6 +2036,12 @@ class Flag extends DataClass implements Insertable<Flag> {
         $FlagsTable.$converterhomeStyle.toSql(homeStyle),
       );
     }
+    {
+      map['check_in_mode'] = Variable<String>(
+        $FlagsTable.$convertercheckInMode.toSql(checkInMode),
+      );
+    }
+    map['tips_seen'] = Variable<bool>(tipsSeen);
     return map;
   }
 
@@ -1999,6 +2054,8 @@ class Flag extends DataClass implements Insertable<Flag> {
           ? const Value.absent()
           : Value(lastWeeklyReplayDayNumber),
       homeStyle: Value(homeStyle),
+      checkInMode: Value(checkInMode),
+      tipsSeen: Value(tipsSeen),
     );
   }
 
@@ -2016,6 +2073,10 @@ class Flag extends DataClass implements Insertable<Flag> {
       homeStyle: $FlagsTable.$converterhomeStyle.fromJson(
         serializer.fromJson<String>(json['homeStyle']),
       ),
+      checkInMode: $FlagsTable.$convertercheckInMode.fromJson(
+        serializer.fromJson<String>(json['checkInMode']),
+      ),
+      tipsSeen: serializer.fromJson<bool>(json['tipsSeen']),
     );
   }
   @override
@@ -2030,6 +2091,10 @@ class Flag extends DataClass implements Insertable<Flag> {
       'homeStyle': serializer.toJson<String>(
         $FlagsTable.$converterhomeStyle.toJson(homeStyle),
       ),
+      'checkInMode': serializer.toJson<String>(
+        $FlagsTable.$convertercheckInMode.toJson(checkInMode),
+      ),
+      'tipsSeen': serializer.toJson<bool>(tipsSeen),
     };
   }
 
@@ -2038,6 +2103,8 @@ class Flag extends DataClass implements Insertable<Flag> {
     bool? day4Celebrated,
     Value<int?> lastWeeklyReplayDayNumber = const Value.absent(),
     HomeStyle? homeStyle,
+    CheckInMode? checkInMode,
+    bool? tipsSeen,
   }) => Flag(
     id: id ?? this.id,
     day4Celebrated: day4Celebrated ?? this.day4Celebrated,
@@ -2045,6 +2112,8 @@ class Flag extends DataClass implements Insertable<Flag> {
         ? lastWeeklyReplayDayNumber.value
         : this.lastWeeklyReplayDayNumber,
     homeStyle: homeStyle ?? this.homeStyle,
+    checkInMode: checkInMode ?? this.checkInMode,
+    tipsSeen: tipsSeen ?? this.tipsSeen,
   );
   Flag copyWithCompanion(FlagsCompanion data) {
     return Flag(
@@ -2056,6 +2125,10 @@ class Flag extends DataClass implements Insertable<Flag> {
           ? data.lastWeeklyReplayDayNumber.value
           : this.lastWeeklyReplayDayNumber,
       homeStyle: data.homeStyle.present ? data.homeStyle.value : this.homeStyle,
+      checkInMode: data.checkInMode.present
+          ? data.checkInMode.value
+          : this.checkInMode,
+      tipsSeen: data.tipsSeen.present ? data.tipsSeen.value : this.tipsSeen,
     );
   }
 
@@ -2065,14 +2138,22 @@ class Flag extends DataClass implements Insertable<Flag> {
           ..write('id: $id, ')
           ..write('day4Celebrated: $day4Celebrated, ')
           ..write('lastWeeklyReplayDayNumber: $lastWeeklyReplayDayNumber, ')
-          ..write('homeStyle: $homeStyle')
+          ..write('homeStyle: $homeStyle, ')
+          ..write('checkInMode: $checkInMode, ')
+          ..write('tipsSeen: $tipsSeen')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, day4Celebrated, lastWeeklyReplayDayNumber, homeStyle);
+  int get hashCode => Object.hash(
+    id,
+    day4Celebrated,
+    lastWeeklyReplayDayNumber,
+    homeStyle,
+    checkInMode,
+    tipsSeen,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2080,7 +2161,9 @@ class Flag extends DataClass implements Insertable<Flag> {
           other.id == this.id &&
           other.day4Celebrated == this.day4Celebrated &&
           other.lastWeeklyReplayDayNumber == this.lastWeeklyReplayDayNumber &&
-          other.homeStyle == this.homeStyle);
+          other.homeStyle == this.homeStyle &&
+          other.checkInMode == this.checkInMode &&
+          other.tipsSeen == this.tipsSeen);
 }
 
 class FlagsCompanion extends UpdateCompanion<Flag> {
@@ -2088,23 +2171,31 @@ class FlagsCompanion extends UpdateCompanion<Flag> {
   final Value<bool> day4Celebrated;
   final Value<int?> lastWeeklyReplayDayNumber;
   final Value<HomeStyle> homeStyle;
+  final Value<CheckInMode> checkInMode;
+  final Value<bool> tipsSeen;
   const FlagsCompanion({
     this.id = const Value.absent(),
     this.day4Celebrated = const Value.absent(),
     this.lastWeeklyReplayDayNumber = const Value.absent(),
     this.homeStyle = const Value.absent(),
+    this.checkInMode = const Value.absent(),
+    this.tipsSeen = const Value.absent(),
   });
   FlagsCompanion.insert({
     this.id = const Value.absent(),
     this.day4Celebrated = const Value.absent(),
     this.lastWeeklyReplayDayNumber = const Value.absent(),
     this.homeStyle = const Value.absent(),
+    this.checkInMode = const Value.absent(),
+    this.tipsSeen = const Value.absent(),
   });
   static Insertable<Flag> custom({
     Expression<int>? id,
     Expression<bool>? day4Celebrated,
     Expression<int>? lastWeeklyReplayDayNumber,
     Expression<String>? homeStyle,
+    Expression<String>? checkInMode,
+    Expression<bool>? tipsSeen,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2112,6 +2203,8 @@ class FlagsCompanion extends UpdateCompanion<Flag> {
       if (lastWeeklyReplayDayNumber != null)
         'last_weekly_replay_day_number': lastWeeklyReplayDayNumber,
       if (homeStyle != null) 'home_style': homeStyle,
+      if (checkInMode != null) 'check_in_mode': checkInMode,
+      if (tipsSeen != null) 'tips_seen': tipsSeen,
     });
   }
 
@@ -2120,6 +2213,8 @@ class FlagsCompanion extends UpdateCompanion<Flag> {
     Value<bool>? day4Celebrated,
     Value<int?>? lastWeeklyReplayDayNumber,
     Value<HomeStyle>? homeStyle,
+    Value<CheckInMode>? checkInMode,
+    Value<bool>? tipsSeen,
   }) {
     return FlagsCompanion(
       id: id ?? this.id,
@@ -2127,6 +2222,8 @@ class FlagsCompanion extends UpdateCompanion<Flag> {
       lastWeeklyReplayDayNumber:
           lastWeeklyReplayDayNumber ?? this.lastWeeklyReplayDayNumber,
       homeStyle: homeStyle ?? this.homeStyle,
+      checkInMode: checkInMode ?? this.checkInMode,
+      tipsSeen: tipsSeen ?? this.tipsSeen,
     );
   }
 
@@ -2149,6 +2246,14 @@ class FlagsCompanion extends UpdateCompanion<Flag> {
         $FlagsTable.$converterhomeStyle.toSql(homeStyle.value),
       );
     }
+    if (checkInMode.present) {
+      map['check_in_mode'] = Variable<String>(
+        $FlagsTable.$convertercheckInMode.toSql(checkInMode.value),
+      );
+    }
+    if (tipsSeen.present) {
+      map['tips_seen'] = Variable<bool>(tipsSeen.value);
+    }
     return map;
   }
 
@@ -2158,7 +2263,9 @@ class FlagsCompanion extends UpdateCompanion<Flag> {
           ..write('id: $id, ')
           ..write('day4Celebrated: $day4Celebrated, ')
           ..write('lastWeeklyReplayDayNumber: $lastWeeklyReplayDayNumber, ')
-          ..write('homeStyle: $homeStyle')
+          ..write('homeStyle: $homeStyle, ')
+          ..write('checkInMode: $checkInMode, ')
+          ..write('tipsSeen: $tipsSeen')
           ..write(')'))
         .toString();
   }
@@ -3145,12 +3252,16 @@ typedef $$FlagsTableCreateCompanionBuilder = FlagsCompanion Function({
   Value<bool> day4Celebrated,
   Value<int?> lastWeeklyReplayDayNumber,
   Value<HomeStyle> homeStyle,
+  Value<CheckInMode> checkInMode,
+  Value<bool> tipsSeen,
 });
 typedef $$FlagsTableUpdateCompanionBuilder = FlagsCompanion Function({
   Value<int> id,
   Value<bool> day4Celebrated,
   Value<int?> lastWeeklyReplayDayNumber,
   Value<HomeStyle> homeStyle,
+  Value<CheckInMode> checkInMode,
+  Value<bool> tipsSeen,
 });
 
 class $$FlagsTableFilterComposer
@@ -3182,6 +3293,17 @@ class $$FlagsTableFilterComposer
         column: $table.homeStyle,
         builder: (column) => ColumnWithTypeConverterFilters(column),
       );
+
+  ColumnWithTypeConverterFilters<CheckInMode, CheckInMode, String>
+  get checkInMode => $composableBuilder(
+    column: $table.checkInMode,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnFilters<bool> get tipsSeen => $composableBuilder(
+    column: $table.tipsSeen,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$FlagsTableOrderingComposer
@@ -3212,6 +3334,16 @@ class $$FlagsTableOrderingComposer
     column: $table.homeStyle,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get checkInMode => $composableBuilder(
+    column: $table.checkInMode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get tipsSeen => $composableBuilder(
+    column: $table.tipsSeen,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$FlagsTableAnnotationComposer
@@ -3238,6 +3370,15 @@ class $$FlagsTableAnnotationComposer
 
   GeneratedColumnWithTypeConverter<HomeStyle, String> get homeStyle =>
       $composableBuilder(column: $table.homeStyle, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<CheckInMode, String> get checkInMode =>
+      $composableBuilder(
+        column: $table.checkInMode,
+        builder: (column) => column,
+      );
+
+  GeneratedColumn<bool> get tipsSeen =>
+      $composableBuilder(column: $table.tipsSeen, builder: (column) => column);
 }
 
 class $$FlagsTableTableManager
@@ -3272,11 +3413,15 @@ class $$FlagsTableTableManager
                 Value<bool> day4Celebrated = const Value.absent(),
                 Value<int?> lastWeeklyReplayDayNumber = const Value.absent(),
                 Value<HomeStyle> homeStyle = const Value.absent(),
+                Value<CheckInMode> checkInMode = const Value.absent(),
+                Value<bool> tipsSeen = const Value.absent(),
               }) => FlagsCompanion(
                 id: id,
                 day4Celebrated: day4Celebrated,
                 lastWeeklyReplayDayNumber: lastWeeklyReplayDayNumber,
                 homeStyle: homeStyle,
+                checkInMode: checkInMode,
+                tipsSeen: tipsSeen,
               ),
           createCompanionCallback:
               ({
@@ -3284,11 +3429,15 @@ class $$FlagsTableTableManager
                 Value<bool> day4Celebrated = const Value.absent(),
                 Value<int?> lastWeeklyReplayDayNumber = const Value.absent(),
                 Value<HomeStyle> homeStyle = const Value.absent(),
+                Value<CheckInMode> checkInMode = const Value.absent(),
+                Value<bool> tipsSeen = const Value.absent(),
               }) => FlagsCompanion.insert(
                 id: id,
                 day4Celebrated: day4Celebrated,
                 lastWeeklyReplayDayNumber: lastWeeklyReplayDayNumber,
                 homeStyle: homeStyle,
+                checkInMode: checkInMode,
+                tipsSeen: tipsSeen,
               ),
           withReferenceMapper: (p0) => p0
               .map(

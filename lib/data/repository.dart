@@ -153,6 +153,8 @@ class StickRepository {
               day4Celebrated: flagRow.day4Celebrated,
               lastWeeklyReplayDayNumber: flagRow.lastWeeklyReplayDayNumber,
               homeStyle: flagRow.homeStyle,
+              checkInMode: flagRow.checkInMode,
+              tipsSeen: flagRow.tipsSeen,
             ),
     );
   }
@@ -334,6 +336,8 @@ class StickRepository {
     day4Celebrated: Value(f.day4Celebrated),
     lastWeeklyReplayDayNumber: Value(f.lastWeeklyReplayDayNumber),
     homeStyle: Value(f.homeStyle),
+    checkInMode: Value(f.checkInMode),
+    tipsSeen: Value(f.tipsSeen),
   );
 
   Future<void> setFlags(Flags f) async {
