@@ -49,6 +49,25 @@ emulator and a real phone over USB (`flutter run --release -d <id>`).
 | 32 | Day 3 rescue shows the quiz hint (e.g. "Too tired? The tiny version is enough today.") | | | |
 | 33 | System font at largest size: every onboarding screen scrolls, the big button stays visible | | | |
 
+## 1.1 home, tabs, timer, intro
+
+| # | Check | Android 16 emulator | Android 8 emulator | Real phone |
+|---|---|---|---|---|
+| 34 | Cold start plays the logo intro (dot drops, STICK slides in, ~0.8 s); a tap skips it; returning to the open app does not replay it | | | |
+| 35 | "Remove animations" on (Accessibility): no intro, no sparks, number changes at once | | | |
+| 36 | Week strip: today dashed, checked days lime; a missed day looks like a future day | | | |
+| 37 | Slide: ticks at ¼ ½ ¾, a firm tap at lock, track fills lime; letting go early springs back with no buzz | | | |
+| 38 | Check-in moment: number rolls up (Road style glides), today's circle pops, sparks, light tap | | | |
+| 39 | Day 3 → 4: two strong taps, then the Day 4 screen | | | |
+| 40 | Settings → Check-in Tap: Home shows the Done today button | | | |
+| 41 | TalkBack: the slide is announced as "Done today" and a double-tap checks in | | | |
+| 42 | Tabs: Home / Progress / Messages / Settings; back gesture on another tab goes to Home; on Home it leaves | | | |
+| 43 | Messages tab: list, "+ Add a message", "▶ Play" | | | |
+| 44 | First Home visit: slide tip, then Messages tip; never again after OK | | | |
+| 45 | Rescue: "⏱ 2-min timer" and long-press on the slide open the timer; Pause/Resume; reaching 0 or Done checks the day in | | | |
+| 46 | Quiz "Day 2" (or "a week or two"): wall screen and promise say day 2 (7), rescue shows that day, Progress says "Get past Day 2 (7)" | | | |
+| 47 | Short phone (Android 8 emulator, small screen) in rescue: the slide bar is reachable (scroll if needed) | | | |
+
 ## Release bundle permission check
 
 Build `flutter build appbundle --release`, then inspect the AAB (or an APK made

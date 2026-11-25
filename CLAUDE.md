@@ -22,7 +22,7 @@ A small Android app (Flutter) for people who quit new habits by day 3. Read this
 - Open branches (not pushed):
   - `feat/habit-name-progress`: the habit name on Home and a clearer Progress screen.
   - `feat/voice-record-ui`: live voice bars and a smaller stop square.
-- Update 1.1 "Friendlier start" (new onboarding: quiz, habit templates, "Day 3 is the wall", "I promise") is built on `feat/friendly-start` (from `feat/app-icon`), version 1.1.0+2. Updates 1.2 (home) and 1.3 (timer) are designed in `docs/superpowers/specs/2026-11-25-friendly-update-design.md`, not built.
+- Version 1.1 (one release, nothing shipped yet) is built on `feat/friendly-start`: new onboarding (quiz, habit templates, "Day N is the wall", "I promise"), new Home (week strip, emoji card, slide to check in with a check-in animation and haptics), bottom tabs (Home, Progress, Messages, Settings), one-time tips, the 2-minute timer and a startup logo animation. The quiz answer sets the first attempt's quit day. Design: `docs/superpowers/specs/2026-11-25-friendly-update-design.md`. Build a release only when the user asks.
 - Known open issue: inexact reminders can arrive hours late, because Android allows a delay of up to 75% of the lead time. A fix that books each reminder with a fixed window has been proposed and not decided.
 
 ## Stack and commands

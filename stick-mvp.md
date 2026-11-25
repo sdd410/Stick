@@ -175,5 +175,5 @@ Pick (done) → Reality check → Design → Build → Test → Launch. One reel
 
 ## Decisions (25 Nov 2026, friendlier app, see `docs/superpowers/specs/2026-11-25-friendly-update-design.md`)
 - Onboarding quiz: "When do you usually quit?" sets the first attempt's quit day (Day 1/2/3 → 1/2/3, a week or two → 7, not sure → 3) for the rescue and "Get past Day N"; after the first miss the learned day takes over. "Why do you usually stop?" picks the rescue hint.
-- Check-in becomes a swipe by default (update 1.2), with tap available in Settings.
-- "See all" and "Add a message" move into a Messages tab (update 1.2).
+- Check-in is a slide by default, with tap available in Settings (Check-in: Slide / Tap).
+- "See all" and "Add a message" moved into a Messages tab. Everything ships together as 1.1.
