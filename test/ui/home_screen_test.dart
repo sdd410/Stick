@@ -60,6 +60,10 @@ class FakeController extends StickController {
 
   @override
   Future<void> pickBackUp() async => pickUps++;
+
+  int tipsMarked = 0;
+  @override
+  Future<void> markTipsSeen() async => tipsMarked++;
 }
 
 HomeState state({
@@ -94,6 +98,7 @@ Snapshot snap({
   String emoji = '⭐',
   CheckInMode checkInMode = CheckInMode.tap,
   List<CheckIn> checkIns = const [],
+  bool tipsSeen = true,
 }) => Snapshot(
   habit: Habit(
     name: name,
@@ -113,6 +118,7 @@ Snapshot snap({
     lastWeeklyReplayDayNumber: null,
     homeStyle: homeStyle,
     checkInMode: checkInMode,
+    tipsSeen: tipsSeen,
   ),
 );
 
@@ -555,6 +561,56 @@ void main() {
     testWidgets('done today shows the settled bar', (t) async {
       await pump(t, state(day: 3, done: true), sn: slideSnap());
       expect(find.text('Done for today ✓'), findsOneWidget);
+    });
+  });
+
+  group('tips', () {
+    const slideTip = "Slide the lime circle right when you've done it.";
+    const messagesTip = 'Your messages to future you live here.';
+
+    testWidgets('two tips, one after the other, then never again', (t) async {
+      final c = await pump(
+        t,
+        state(day: 1),
+        sn: snap(checkInMode: CheckInMode.slide, tipsSeen: false),
+      );
+      expect(find.text(slideTip), findsOneWidget);
+      expect(find.text(messagesTip), findsNothing);
+      await t.tap(find.text('OK'));
+      await t.pumpAndSettle();
+      expect(find.text(slideTip), findsNothing);
+      expect(find.text(messagesTip), findsOneWidget);
+      await t.tap(find.text('OK'));
+      await t.pumpAndSettle();
+      expect(find.text(messagesTip), findsNothing);
+      expect(c.tipsMarked, 1);
+    });
+
+    testWidgets('tap mode explains the button', (t) async {
+      await pump(t, state(day: 1), sn: snap(tipsSeen: false));
+      expect(find.text("Tap Done today when you've done it."), findsOneWidget);
+    });
+
+    testWidgets('no tips once seen or while paused', (t) async {
+      await pump(t, state(day: 1), sn: snap(checkInMode: CheckInMode.slide));
+      expect(find.text(slideTip), findsNothing);
+      await pump(
+        t,
+        state(day: 3, paused: true),
+        sn: snap(checkInMode: CheckInMode.slide, tipsSeen: false),
+      );
+      expect(find.text(slideTip), findsNothing);
+    });
+
+    testWidgets('the slide still works under the first tip', (t) async {
+      final c = await pump(
+        t,
+        state(day: 1),
+        sn: snap(checkInMode: CheckInMode.slide, tipsSeen: false),
+      );
+      await slideToCheckIn(t);
+      await t.pumpAndSettle();
+      expect(c.checkIns, 1);
     });
   });
 }

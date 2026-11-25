@@ -15,6 +15,7 @@ import '../celebration/day4_screen.dart';
 import 'home_big_number.dart';
 import 'home_road.dart';
 import 'slide_to_check_in.dart';
+import 'tip_bubble.dart';
 import 'week_strip_view.dart';
 
 /// Length of the check-in moment (roll, pop, sparks).
@@ -58,6 +59,9 @@ class _HomeScreenState extends State<HomeScreen>
     duration: _momentLength,
   );
   bool _secondHeavyDue = false;
+
+  /// Which one-time tip shows (0 = slide, 1 = Messages, 2 = none).
+  int _tip = 0;
 
   /// The day-4 screen opens when the moment finishes.
   bool _day4Pending = false;
@@ -161,85 +165,114 @@ class _HomeScreenState extends State<HomeScreen>
 
     final showRescue = inRescue && !home.paused;
     final showBanner = home.clipPrompt && !home.paused && !inRescue;
+    final showTips = !snap.flags.tipsSeen && !home.paused && _tip < 2;
 
     return Scaffold(
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _topRow(home),
-                    const SizedBox(height: 16),
-                    WeekStripView(
-                      days: weekStrip(
-                        c.today,
-                        snap.allCheckIns.map((x) => x.day),
-                      ),
-                    ),
-                    if (showBanner)
-                      InkWell(
-                        onTap: widget.onAddMessage,
-                        borderRadius: BorderRadius.circular(16),
-                        child: Container(
-                          margin: const EdgeInsets.only(top: 16),
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: StickColors.lime),
+        child: Stack(
+          children: [
+            CustomScrollView(
+              slivers: [
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _topRow(home),
+                        const SizedBox(height: 16),
+                        WeekStripView(
+                          days: weekStrip(
+                            c.today,
+                            snap.allCheckIns.map((x) => x.day),
+                          ),
+                        ),
+                        if (showBanner)
+                          InkWell(
+                            onTap: widget.onAddMessage,
                             borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: const Text(
-                            'Record one for future you.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              fontVariations: [FontVariation('wght', 600)],
-                            ),
-                          ),
-                        ),
-                      ),
-                    Expanded(
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            if (home.rescue == RescueReason.quitDay &&
-                                home.lastQuitDay != null &&
-                                home.attemptNumber > 1) ...[
-                              const SizedBox(height: 16),
-                              Text(
-                                'Last time you stopped on Day '
-                                '${home.lastQuitDay}. '
-                                'Today is Day ${home.dayNumber}.',
-                                textAlign: TextAlign.center,
-                                style: textTheme.titleMedium,
+                            child: Container(
+                              margin: const EdgeInsets.only(top: 16),
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: StickColors.lime),
+                                borderRadius: BorderRadius.circular(16),
                               ),
-                            ],
-                            const SizedBox(height: 16),
-                            _card(
-                              context,
-                              snap: snap,
-                              home: home,
-                              showRescue: showRescue,
-                              showReplay: showReplay,
-                              noMotion: noMotion,
+                              child: const Text(
+                                'Record one for future you.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  fontVariations: [FontVariation('wght', 600)],
+                                ),
+                              ),
                             ),
-                            const SizedBox(height: 16),
-                          ],
+                          ),
+                        Expanded(
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                if (home.rescue == RescueReason.quitDay &&
+                                    home.lastQuitDay != null &&
+                                    home.attemptNumber > 1) ...[
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Last time you stopped on Day '
+                                    '${home.lastQuitDay}. '
+                                    'Today is Day ${home.dayNumber}.',
+                                    textAlign: TextAlign.center,
+                                    style: textTheme.titleMedium,
+                                  ),
+                                ],
+                                const SizedBox(height: 16),
+                                _card(
+                                  context,
+                                  snap: snap,
+                                  home: home,
+                                  showRescue: showRescue,
+                                  showReplay: showReplay,
+                                  noMotion: noMotion,
+                                ),
+                                const SizedBox(height: 16),
+                              ],
+                            ),
+                          ),
                         ),
-                      ),
+                        _checkInControl(c, home, snap.flags.checkInMode),
+                      ],
                     ),
-                    _checkInControl(c, home, snap.flags.checkInMode),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
+            if (showTips)
+              Positioned(
+                left: 24,
+                right: 24,
+                bottom: _tip == 0 ? 24 + 64 + 8 : 4,
+                child: _tip == 0
+                    ? TipBubble(
+                        text: snap.flags.checkInMode == CheckInMode.slide
+                            ? "Slide the lime circle right when you've done it."
+                            : "Tap Done today when you've done it.",
+                        arrowAt: snap.flags.checkInMode == CheckInMode.slide
+                            ? 0.1
+                            : 0.5,
+                        onOk: () => setState(() => _tip = 1),
+                      )
+                    : TipBubble(
+                        text: 'Your messages to future you live here.',
+                        arrowAt: 0.62,
+                        onOk: () {
+                          setState(() => _tip = 2);
+                          c.markTipsSeen();
+                        },
+                      ),
+              ),
           ],
         ),
       ),
