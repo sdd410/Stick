@@ -15,6 +15,7 @@ import 'ui/replay/clip_list_screen.dart';
 import 'ui/replay/clip_player.dart';
 import 'ui/replay/replay_screen.dart';
 import 'ui/home/home_screen.dart';
+import 'ui/intro/logo_intro.dart';
 import 'ui/progress/progress_screen.dart';
 import 'ui/record/record_screen.dart';
 import 'ui/settings/battery_tip_card.dart';
@@ -69,7 +70,12 @@ class StickApp extends StatelessWidget {
     this.files,
     this.manufacturer = readDeviceManufacturer,
     this.openSystemSettings = openAppSettings,
+    this.showIntro = false,
   });
+
+  /// Plays the logo intro once when the app starts (main sets it; tests
+  /// leave it off).
+  final bool showIntro;
 
   /// Injectable so tests never touch the platform channel.
   final Future<String> Function() manufacturer;
@@ -87,6 +93,7 @@ class StickApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: stickTheme(),
       home: _Root(
+        showIntro: showIntro,
         recorder: recorder,
         files: files,
         manufacturer: manufacturer,
@@ -98,6 +105,7 @@ class StickApp extends StatelessWidget {
 
 class _Root extends StatefulWidget {
   const _Root({
+    required this.showIntro,
     this.recorder,
     this.files,
     required this.manufacturer,
@@ -108,12 +116,16 @@ class _Root extends StatefulWidget {
   final ClipFiles? files;
   final Future<String> Function() manufacturer;
   final OpenSystemSettings openSystemSettings;
+  final bool showIntro;
 
   @override
   State<_Root> createState() => _RootState();
 }
 
 class _RootState extends State<_Root> {
+  // Once per process: the state lives as long as the app does.
+  late bool _introDone = !widget.showIntro;
+
   // Setup stays on screen after the habit exists, for the optional first clip.
   bool _inSetup = false;
 
@@ -197,6 +209,9 @@ class _RootState extends State<_Root> {
   @override
   Widget build(BuildContext context) {
     final c = StickScope.of(context);
+    if (!_introDone) {
+      return LogoIntro(onDone: () => setState(() => _introDone = true));
+    }
     if (!c.loaded) {
       if (c.loadError != null) return _LoadErrorScreen(onRetry: _retry);
       return const Scaffold();

@@ -70,6 +70,10 @@ class _StickLifecycleState extends State<StickLifecycle>
   @override
   Widget build(BuildContext context) => StickScope(
     controller: widget.controller,
-    child: StickApp(recorder: widget.recorder, files: widget.files),
+    child: StickApp(
+      recorder: widget.recorder,
+      files: widget.files,
+      showIntro: true,
+    ),
   );
 }
