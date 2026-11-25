@@ -49,7 +49,7 @@ Never checked on a device so far. Test these first:
 
 ## 3. Finish the look (~1 hour)
 
-- [ ] **App icon:** replace the default Flutter icon with the lime S tile (from `brand/`). Easiest is the `flutter_launcher_icons` package, or Android Studio → New → Image Asset.
+- [x] **App icon:** "S." on a lime tile (concept D, 24 Nov 2026). Adaptive + monochrome layers in `android/app/src/main/res/mipmap-*`; Play icon and source in `../../brand/stick/`.
 - [ ] **Screen-record both home styles** (big number and road) for the Design reel's "A or B?" vote.
 
 ## 4. Build the release and check it
