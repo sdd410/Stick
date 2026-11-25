@@ -239,6 +239,29 @@ void main() {
     expect(type.single.read<String>('v'), 'video');
   });
 
+  test('a restored pre-1.1 database is reset instead of breaking', () async {
+    final old = db_.StickDatabase.forTesting(
+      NativeDatabase.memory(
+        setup: (raw) {
+          raw.execute(
+            'CREATE TABLE habits (id INTEGER NOT NULL PRIMARY KEY, '
+            'name TEXT NOT NULL, tiny TEXT, why TEXT NOT NULL, '
+            'reminder_minutes INTEGER NOT NULL, created_at INTEGER NOT NULL)',
+          );
+          raw.execute(
+            "INSERT INTO habits VALUES (1, 'Walk', NULL, 'x', 480, 0)",
+          );
+          raw.execute('PRAGMA user_version = 1');
+        },
+      ),
+    );
+    addTearDown(old.close);
+    final r = StickRepository(old);
+    expect(await r.load(), isNull); // back to setup, not an error screen
+    await r.createHabit(_habit, '2026-11-25');
+    expect((await r.load())!.habit, _habit);
+  });
+
   test('upgrading from an unknown schema version fails loudly', () async {
     final strategy = db.migration;
     expect(

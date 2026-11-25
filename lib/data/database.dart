@@ -103,6 +103,18 @@ class StickDatabase extends _$StickDatabase {
     onUpgrade: (m, from, to) async {
       throw UnsupportedError('No migration from schema version $from to $to');
     },
+    // A pre-1.1 build also used schema 1 but had no onboarding columns, and
+    // Android Auto Backup can restore that file after a reinstall. Only the
+    // developer's phone ever had it, so start over instead of breaking.
+    beforeOpen: (details) async {
+      final cols = await customSelect('PRAGMA table_info(habits)').get();
+      final hasEmoji = cols.any((r) => r.read<String>('name') == 'emoji');
+      if (cols.isEmpty || hasEmoji) return;
+      for (final t in allTables) {
+        await customStatement('DROP TABLE IF EXISTS "${t.actualTableName}"');
+      }
+      await createMigrator().createAll();
+    },
   );
 }
 
