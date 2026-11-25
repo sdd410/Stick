@@ -112,16 +112,24 @@ void main() {
     await t.pumpWidget(StickScope(controller: c, child: const StickApp()));
 
     // Setup.
-    expect(find.text('Step 1 of 3'), findsOneWidget);
-    await t.enterText(find.byType(TextField), 'Walk');
-    await t.pump();
-    await t.tap(find.text('Next'));
-    await t.pump();
-    await t.tap(find.text('Next'));
-    await t.pump();
+    expect(find.text('Built for the day you quit.'), findsOneWidget);
+    Future<void> tapText(String text) async {
+      await t.tap(find.text(text).last);
+      await t.pumpAndSettle();
+    }
+
+    await tapText('Start');
+    await tapText('Skip');
+    await tapText('Skip');
+    await tapText('Walk');
+    await t.enterText(find.byKey(const Key('habit-tiny')), '');
+    await tapText('Continue');
     await t.enterText(find.byType(TextField), 'Head clear');
-    await t.pump();
-    await t.tap(find.text('Start'));
+    await tapText('Continue');
+    await tapText('Continue');
+    await settle(t);
+    await tapText('Got it');
+    await tapText('I promise');
     await settle(t);
     expect(find.text('Attempt 1 · Day 1'), findsOneWidget);
 
