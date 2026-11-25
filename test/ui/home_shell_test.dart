@@ -10,10 +10,13 @@ import 'package:stick/controller/stick_scope.dart';
 import 'package:stick/data/database.dart' as db_;
 import 'package:stick/data/repository.dart';
 import 'package:stick/domain/models.dart';
+import 'package:stick/domain/onboarding.dart';
 import 'package:stick/services/clip_files.dart';
 import 'package:stick/services/clip_recorder.dart';
 import 'package:stick/ui/progress/progress_screen.dart';
 import 'package:stick/ui/record/record_screen.dart';
+
+import '../support/home_helpers.dart';
 
 class _Recorder implements ClipRecorder {
   @override
@@ -172,5 +175,44 @@ void main() {
     await settle(t);
     await settle(t);
     expect(find.text('Built for the day you quit.'), findsOneWidget);
+  });
+
+  testWidgets('a real slide on a day-1 rescue plays the lime flood', (t) async {
+    c = StickController(
+      repo: StickRepository(db),
+      clock: () => DateTime(2026, 11, 25, 12),
+      reminders: NoopReminderSink(),
+    );
+    await t.runAsync(() async {
+      await c.open();
+      await c.createHabit(
+        name: 'Read',
+        tiny: 'Read one page',
+        why: '',
+        reminderMinutes: 1140,
+        emoji: '📖',
+        templateId: 'read',
+        quizQuitDay: QuitDayAnswer.day1,
+        quizReason: QuitReason.bored,
+      );
+      await c.markTipsSeen();
+    });
+    await t.pumpWidget(
+      StickScope(
+        controller: c,
+        child: StickApp(recorder: _Recorder(), files: ClipFiles(tmp)),
+      ),
+    );
+    await t.pumpAndSettle();
+    expect(find.text('Just do this. Get to day 2.'), findsOneWidget);
+    await t.runAsync(() async {
+      await slideToCheckIn(t);
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+    });
+    await t.pump();
+    await t.pump(const Duration(milliseconds: 200));
+    expect(find.byKey(const Key('check-in-flood')), findsOneWidget);
+    await t.pumpAndSettle();
+    expect(c.home!.checkedInToday, isTrue);
   });
 }
