@@ -224,11 +224,17 @@ class _EditSheetState extends State<_EditSheet> {
   Widget build(BuildContext context) {
     final ok = _name.text.trim().isNotEmpty;
     return Padding(
+      // Clear the keyboard, or else the system navigation bar (3-button
+      // navigation sits over the sheet otherwise).
       padding: EdgeInsets.fromLTRB(
         24,
         24,
         24,
-        24 + MediaQuery.viewInsetsOf(context).bottom,
+        24 +
+            (MediaQuery.viewInsetsOf(context).bottom >
+                    MediaQuery.viewPaddingOf(context).bottom
+                ? MediaQuery.viewInsetsOf(context).bottom
+                : MediaQuery.viewPaddingOf(context).bottom),
       ),
       child: SingleChildScrollView(
         child: Column(

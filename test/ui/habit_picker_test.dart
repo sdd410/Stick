@@ -117,4 +117,19 @@ void main() {
     expect(picked.single.name, 'Walk 20 minutes');
     expect(picked.single.templateId, 'walk');
   });
+
+  testWidgets('the sheet button stays above the system navigation bar', (
+    t,
+  ) async {
+    await pump(t);
+    t.view.padding = const FakeViewPadding(bottom: 48);
+    t.view.viewPadding = const FakeViewPadding(bottom: 48);
+    addTearDown(t.view.resetPadding);
+    addTearDown(t.view.resetViewPadding);
+    await t.pump();
+    await t.tap(find.text('Read'));
+    await t.pumpAndSettle();
+    final button = t.getRect(find.widgetWithText(FilledButton, 'Continue'));
+    expect(button.bottom, lessThanOrEqualTo(900 - 48));
+  });
 }
