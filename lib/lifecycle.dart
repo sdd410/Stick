@@ -5,6 +5,7 @@ import 'controller/stick_controller.dart';
 import 'controller/stick_scope.dart';
 import 'services/clip_files.dart';
 import 'services/clip_recorder.dart';
+import 'services/splash_gate.dart';
 import 'ui/replay/clip_player.dart';
 
 /// Hosts the app: re-opens (reload + reschedule) whenever it returns to the
@@ -18,7 +19,11 @@ class StickLifecycle extends StatefulWidget {
     required this.launchPayload,
     this.playerFactory = videoPlayerClipPlayer,
     this.ready,
+    this.splash,
   });
+
+  /// See [StickApp.splash].
+  final SplashGate? splash;
 
   /// Completes once the first load is done (main loads behind the intro
   /// instead of before the first frame). Null means already loaded.
@@ -80,6 +85,7 @@ class _StickLifecycleState extends State<StickLifecycle>
       recorder: widget.recorder,
       files: widget.files,
       showIntro: true,
+      splash: widget.splash,
     ),
   );
 }

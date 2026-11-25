@@ -1,6 +1,9 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../services/splash_gate.dart';
 import '../../theme.dart';
 
 const _length = Duration(milliseconds: 1300);
@@ -36,10 +39,19 @@ const _wordStyle = TextStyle(
 /// full logo instead of fading to a blank screen. A tap skips it; with
 /// animations off it ends at once.
 class LogoIntro extends StatefulWidget {
-  const LogoIntro({super.key, required this.onDone, this.waiting = false});
+  const LogoIntro({
+    super.key,
+    required this.onDone,
+    this.waiting = false,
+    this.splash,
+  });
 
   final VoidCallback onDone;
   final bool waiting;
+
+  /// When set, the intro holds its first frame until Android's splash is
+  /// gone, and starts from the phone's icon shape.
+  final SplashGate? splash;
 
   @override
   State<LogoIntro> createState() => _LogoIntroState();
@@ -52,7 +64,11 @@ class _LogoIntroState extends State<LogoIntro>
     duration: _length,
   );
   bool _finished = false;
+  bool _started = false;
   bool _landed = false;
+
+  /// The phone's icon shape (radial distances), or null for a circle.
+  List<double>? _shape;
   bool _skipped = false;
 
   late final Animation<double> _pop =
@@ -113,12 +129,23 @@ class _LogoIntroState extends State<LogoIntro>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_c.isAnimating || _finished || _c.value > 0) return;
+    if (_started || _finished) return;
+    _started = true;
     if (MediaQuery.disableAnimationsOf(context)) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _finish());
-    } else {
-      _c.forward();
+      return;
     }
+    final gate = widget.splash;
+    if (gate == null) {
+      _c.forward();
+      return;
+    }
+    gate.iconShape().then((s) {
+      if (mounted && s != null && _c.value == 0) setState(() => _shape = s);
+    });
+    gate.splashGone().then((_) {
+      if (mounted && !_finished && !_c.isAnimating) _c.forward();
+    });
   }
 
   @override
@@ -238,7 +265,18 @@ class _LogoIntroState extends State<LogoIntro>
     );
   }
 
-  Widget _tile(double radius) => Container(
+  Widget _tile(double radius) {
+    final shape = _shape;
+    final tile = _tileBody(shape == null ? radius : 0);
+    if (shape == null) return tile;
+    return ClipPath(
+      key: const Key('intro-shape'),
+      clipper: IntroShapeClipper(radii: shape, morph: _morph.value),
+      child: tile,
+    );
+  }
+
+  Widget _tileBody(double radius) => Container(
     key: const Key('intro-tile'),
     width: _splash,
     height: _splash,
@@ -280,4 +318,49 @@ class _LogoIntroState extends State<LogoIntro>
       ],
     ),
   );
+}
+
+/// Morphs the phone's icon shape ([radii], see [SplashGate.iconShape]) into
+/// Stick's rounded tile (corner radius 36 of 80) as [morph] goes 0 → 1.
+class IntroShapeClipper extends CustomClipper<Path> {
+  IntroShapeClipper({required this.radii, required this.morph});
+
+  final List<double> radii;
+  final double morph;
+
+  static const double _corner = 36 / 80;
+
+  /// Centre-to-edge distance of the rounded tile (half size 1) at [a].
+  static double _tileAt(double a) {
+    final c = math.cos(a).abs(), s = math.sin(a).abs();
+    final straight = 1 / math.max(c, s);
+    const k = 1 - _corner;
+    if (straight * c <= k || straight * s <= k) return straight;
+    final b = k * (c + s);
+    return b + math.sqrt(math.max(0, b * b - (2 * k * k - _corner * _corner)));
+  }
+
+  @override
+  Path getClip(Size size) {
+    final half = size.width / 2, centre = size.center(Offset.zero);
+    const steps = 360;
+    final path = Path();
+    for (var i = 0; i < steps; i++) {
+      final a = 2 * math.pi * i / steps;
+      // Interpolate between the 72 measured samples.
+      final f = i * radii.length / steps;
+      final j = f.floor() % radii.length;
+      final from =
+          radii[j] +
+          (radii[(j + 1) % radii.length] - radii[j]) * (f - f.floor());
+      final r = (from + (_tileAt(a) - from) * morph) * half;
+      final p = centre + Offset(math.cos(a) * r, math.sin(a) * r);
+      i == 0 ? path.moveTo(p.dx, p.dy) : path.lineTo(p.dx, p.dy);
+    }
+    return path..close();
+  }
+
+  @override
+  bool shouldReclip(covariant IntroShapeClipper old) =>
+      old.morph != morph || old.radii != radii;
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +10,7 @@ import 'package:stick/controller/stick_scope.dart';
 import 'package:stick/data/database.dart' as db_;
 import 'package:stick/data/repository.dart';
 import 'package:stick/theme.dart';
+import 'package:stick/services/splash_gate.dart';
 import 'package:stick/ui/intro/logo_intro.dart';
 
 void main() {
@@ -126,4 +129,73 @@ void main() {
     expect(find.byType(LogoIntro), findsNothing);
     expect(find.text('Built for the day you quit.'), findsOneWidget);
   });
+
+  testWidgets('waits for the system splash to go before it starts', (t) async {
+    done = 0;
+    final gate = _FakeGate();
+    await t.pumpWidget(
+      MaterialApp(
+        theme: stickTheme(),
+        home: LogoIntro(splash: gate, onDone: () => done++),
+      ),
+    );
+    await t.pump(const Duration(seconds: 1));
+    expect(find.text('STICK'), findsNothing); // still the splash frame
+    expect(tileRadius(t), 80);
+    gate.gone.complete();
+    await t.pump(); // the signal is handled
+    await t.pump(); // the animation's first frame marks its start
+    await t.pump(const Duration(milliseconds: 900));
+    expect(find.text('STICK'), findsOneWidget);
+    await t.pump(const Duration(seconds: 1));
+    expect(done, 1);
+  });
+
+  testWidgets('starts anyway if the splash never reports', (t) async {
+    done = 0;
+    await t.pumpWidget(
+      MaterialApp(
+        theme: stickTheme(),
+        home: LogoIntro(splash: _FakeGate(), onDone: () => done++),
+      ),
+    );
+    await t.pump(const Duration(milliseconds: 1600)); // gate timeout
+    await t.pump(const Duration(milliseconds: 900));
+    expect(find.text('STICK'), findsOneWidget);
+  });
+
+  testWidgets("starts from the phone's own icon shape, then morphs", (t) async {
+    done = 0;
+    final gate = _FakeGate(shape: List.filled(72, 0.9));
+    await t.pumpWidget(
+      MaterialApp(
+        theme: stickTheme(),
+        home: LogoIntro(splash: gate, onDone: () => done++),
+      ),
+    );
+    await t.pump();
+    IntroShapeClipper clipper() =>
+        t.widget<ClipPath>(find.byKey(const Key('intro-shape'))).clipper!
+            as IntroShapeClipper;
+    expect(clipper().radii, List.filled(72, 0.9));
+    expect(clipper().morph, 0);
+    gate.gone.complete();
+    await t.pump(); // the signal is handled
+    await t.pump(); // the animation's first frame marks its start
+    await t.pump(const Duration(milliseconds: 600));
+    expect(clipper().morph, 1);
+  });
+}
+
+class _FakeGate implements SplashGate {
+  _FakeGate({this.shape});
+  final List<double>? shape;
+  final gone = Completer<void>();
+
+  @override
+  Future<void> splashGone() =>
+      gone.future.timeout(const Duration(milliseconds: 1500), onTimeout: () {});
+
+  @override
+  Future<List<double>?> iconShape() async => shape;
 }

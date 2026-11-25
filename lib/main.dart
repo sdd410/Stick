@@ -11,6 +11,7 @@ import 'data/repository.dart';
 import 'services/clip_files.dart';
 import 'services/clip_recorder.dart';
 import 'services/notification_service.dart';
+import 'services/splash_gate.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,6 +25,8 @@ Future<void> main() async {
       systemNavigationBarIconBrightness: Brightness.light,
     ),
   );
+  // Listen for "splash gone" before the first frame can trigger it.
+  final splash = AndroidSplashGate();
   final files = ClipFiles(await getApplicationDocumentsDirectory());
   final notifications = NotificationService();
   final controller = StickController(
@@ -57,6 +60,7 @@ Future<void> main() async {
       recorder: DeviceClipRecorder(),
       launchPayload: notifications.launchPayload,
       ready: ready,
+      splash: splash,
     ),
   );
 }

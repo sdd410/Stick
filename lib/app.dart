@@ -4,6 +4,7 @@ import 'controller/stick_scope.dart';
 import 'domain/battery_tip.dart';
 import 'services/clip_files.dart';
 import 'services/device_info.dart';
+import 'services/splash_gate.dart';
 
 import 'package:permission_handler/permission_handler.dart';
 
@@ -71,7 +72,11 @@ class StickApp extends StatelessWidget {
     this.manufacturer = readDeviceManufacturer,
     this.openSystemSettings = openAppSettings,
     this.showIntro = false,
+    this.splash,
   });
+
+  /// Lets the intro wait for Android's splash and match the icon shape.
+  final SplashGate? splash;
 
   /// Plays the logo intro once when the app starts (main sets it; tests
   /// leave it off).
@@ -94,6 +99,7 @@ class StickApp extends StatelessWidget {
       theme: stickTheme(),
       home: _Root(
         showIntro: showIntro,
+        splash: splash,
         recorder: recorder,
         files: files,
         manufacturer: manufacturer,
@@ -106,6 +112,7 @@ class StickApp extends StatelessWidget {
 class _Root extends StatefulWidget {
   const _Root({
     required this.showIntro,
+    this.splash,
     this.recorder,
     this.files,
     required this.manufacturer,
@@ -117,6 +124,7 @@ class _Root extends StatefulWidget {
   final Future<String> Function() manufacturer;
   final OpenSystemSettings openSystemSettings;
   final bool showIntro;
+  final SplashGate? splash;
 
   @override
   State<_Root> createState() => _RootState();
@@ -210,6 +218,7 @@ class _RootState extends State<_Root> {
     final c = StickScope.of(context);
     if (!_introDone) {
       return LogoIntro(
+        splash: widget.splash,
         // Hold the logo until the first load is done (or failed).
         waiting: !c.loaded && c.loadError == null,
         onDone: () => setState(() => _introDone = true),
