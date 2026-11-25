@@ -10,6 +10,7 @@ import 'package:stick/data/repository.dart';
 import 'package:stick/domain/onboarding.dart';
 import 'package:stick/theme.dart';
 import 'package:stick/ui/setup/setup_flow.dart';
+import 'package:stick/ui/setup/setup_widgets.dart';
 
 class _Sink implements ReminderSink {
   _Sink({this.throws = false});
@@ -161,6 +162,31 @@ void main() {
     await tap(t, 'Skip recording');
     await settle(t);
     expect(c.snapshot!.current.quitTarget, 2);
+  });
+
+  testWidgets('why examples are stacked one per row, full width', (t) async {
+    await pump(t);
+    await toWhy(t);
+    final rows =
+        ['Feel healthier', 'Prove I can stick to something', 'Less stress'].map(
+          (l) => t.getRect(
+            find.ancestor(of: find.text(l), matching: find.byType(ChoiceCard)),
+          ),
+        );
+    final r = rows.toList();
+    expect(r[0].width, r[1].width);
+    expect(r[1].width, r[2].width);
+    expect(r[0].top, lessThan(r[1].top));
+    expect(r[1].top, lessThan(r[2].top));
+    await tap(t, 'Less stress');
+    final card = t.widget<ChoiceCard>(
+      find.ancestor(
+        of: find.text('Less stress'),
+        matching: find.byType(ChoiceCard),
+      ),
+    );
+    expect(card.selected, isTrue);
+    expect(find.text('Less stress'), findsNWidgets(2)); // field + card
   });
 
   testWidgets('quiz Continue waits for an answer', (t) async {

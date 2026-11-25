@@ -28,9 +28,9 @@ const _reasonChoices = [
 ];
 
 const _whyExamples = [
-  'Feel healthier',
-  'Prove I can stick to something',
-  'Less stress',
+  ('💪', 'Feel healthier'),
+  ('🏆', 'Prove I can stick to something'),
+  ('🧘', 'Less stress'),
 ];
 
 const _timeChips = [
@@ -257,21 +257,19 @@ class _SetupFlowState extends State<SetupFlow> {
       children: [
         TextField(
           controller: _why,
+          onChanged: (_) => setState(() {}),
           textCapitalization: TextCapitalization.sentences,
           decoration: const InputDecoration(hintText: 'Your reason (optional)'),
         ),
         const SizedBox(height: 16),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final e in _whyExamples)
-              ActionChip(
-                label: Text(e),
-                onPressed: () => setState(() => _why.text = e),
-              ),
-          ],
-        ),
+        // One per row, like the quiz answers; tapping fills the reason.
+        for (final (emoji, label) in _whyExamples)
+          ChoiceCard(
+            emoji: emoji,
+            label: label,
+            selected: _why.text.trim() == label,
+            onTap: () => setState(() => _why.text = label),
+          ),
       ],
     ),
   );

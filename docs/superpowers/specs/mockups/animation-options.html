@@ -1,0 +1,220 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<title>Stick animation options</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;700;800&display=block" rel="stylesheet">
+<style>
+:root{--bg:#0b0b12;--card:#16161f;--line:#262633;--lime:#c6ff3d;--muted:#8a8a98}
+*{box-sizing:border-box;margin:0}
+body{background:#05050a;color:#fff;font-family:Inter;padding:28px 32px 48px}
+h1{font:400 30px 'Archivo Black';margin-bottom:4px}h1 em{font-style:normal;color:var(--lime)}
+.intro{color:var(--muted);margin-bottom:26px;font-size:15px}
+h2{font:400 22px 'Archivo Black';margin:34px 0 14px}h2 em{font-style:normal;color:var(--lime)}
+.row{display:flex;gap:28px;flex-wrap:wrap}
+.opt{width:280px}
+.lbl{font:800 18px Inter;color:var(--lime);margin-top:12px}
+.desc{color:#c9c9d3;font-size:13.5px;line-height:1.45;margin-top:4px}
+.meta{color:var(--muted);font-size:12px;margin-top:6px}
+.ph{width:280px;height:580px;background:var(--bg);border-radius:34px;border:2px solid #22222e;position:relative;overflow:hidden}
+button.rp{margin-top:8px;background:#1f1f2a;color:#fff;border:0;border-radius:16px;padding:6px 12px;font:600 12px Inter;cursor:pointer}
+/* splash + logo pieces */
+.center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.tile{width:112px;height:112px;background:var(--lime);border-radius:50%;position:relative;display:flex;align-items:center;justify-content:center}
+.S{font:400 64px/1 'Archivo Black';color:var(--bg);transform:translateX(-6px)}
+.dot{position:absolute;width:14px;height:14px;border-radius:50%;background:var(--bg);right:26px;bottom:31px}
+.lockup{position:relative}
+.word{font:400 40px/48px 'Archivo Black';color:var(--lime);opacity:0;position:absolute;left:calc(100% + 14px);top:50%;margin-top:-24px;white-space:nowrap}
+/* app mock */
+.app{position:absolute;inset:0;padding:40px 18px 18px;display:flex;flex-direction:column;opacity:0}
+.top{font:700 12px Inter;border:1px solid #444452;border-radius:20px;padding:7px 12px;align-self:flex-start}
+.week{display:flex;justify-content:space-between;margin:14px 0}
+.d{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;color:var(--muted)}
+.d i{width:28px;height:28px;border-radius:50%;border:2px solid #2c2c3a;display:grid;place-items:center;font-style:normal;font:800 12px Inter;color:var(--bg)}
+.d.ok i{background:var(--lime);border-color:var(--lime)}
+.d.now i{border:2px dashed var(--lime);color:var(--lime)}
+.cardm{background:var(--card);border-radius:20px;padding:16px;text-align:center;position:relative;overflow:hidden;margin-top:auto;margin-bottom:auto}
+.hn{font:400 17px 'Archivo Black'}
+.numwrap{height:78px;overflow:hidden;position:relative;margin-top:6px}
+.num{font:400 64px/78px 'Archivo Black';color:var(--lime);position:absolute;left:0;right:0}
+.bar{height:54px;border-radius:27px;background:#1b1b25;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--muted);font:600 13px Inter}
+.fill{position:absolute;left:0;top:0;bottom:0;width:54px;border-radius:27px;background:rgba(198,255,61,.3)}
+.knob{position:absolute;left:5px;top:5px;width:44px;height:44px;border-radius:50%;background:var(--lime);display:grid;place-items:center;color:var(--bg);font:800 18px Inter;z-index:2}
+.nav{display:flex;justify-content:space-around;margin-top:12px;font-size:10px;color:var(--muted)}
+.nav b{color:var(--lime)}
+.spark{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--lime);left:50%;top:50%;opacity:0}
+.flood{position:absolute;inset:0;background:var(--lime);clip-path:circle(0% at 50% 120%);z-index:3;display:flex;align-items:center;justify-content:center;font:400 64px 'Archivo Black';color:var(--bg)}
+.stamp{position:absolute;left:50%;top:44%;z-index:5;border:4px solid var(--lime);color:var(--lime);font:400 30px 'Archivo Black';padding:6px 14px;border-radius:10px;transform:translate(-50%,-50%) rotate(-12deg) scale(2.4);opacity:0;background:rgba(11,11,18,.85);white-space:nowrap}
+.flash{position:absolute;inset:0;background:#fff;opacity:0;z-index:6;pointer-events:none}
+.conf{position:absolute;width:7px;height:12px;background:var(--lime);top:-20px;opacity:0;z-index:4;border-radius:2px}
+.hap{display:inline-block;background:#1b2210;color:var(--lime);border-radius:10px;padding:2px 8px;font:700 11px Inter;margin-right:4px;margin-top:4px}
+</style></head><body>
+<h1>Stick: <em>animation options</em></h1>
+<p class="intro">Every startup option begins with Android's own splash (lime circle with "S."), so the handoff looks exactly like this on a phone. Each one loops; click "Replay" to watch it again. Pick one from each row, or mix them ("A, but with C's ending").</p>
+
+<h2>Startup <em>(after the system splash)</em></h2>
+<div class="row" id="startup"></div>
+
+<h2>Day check-in <em>(after the slide locks)</em></h2>
+<div class="row" id="checkin"></div>
+
+<script>
+const E = (html) => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstChild; };
+const wait = (ms) => new Promise(r => setTimeout(r, ms));
+const A = (el, kf, o) => el.animate(kf, Object.assign({fill:'forwards', easing:'cubic-bezier(.2,.8,.2,1)'}, o)).finished;
+
+function appMock(day=3, done=false){
+  const days = ['M','T','W','T','F','S','S'].map((l,i)=>{
+    const cls = i<day-1 ? 'ok' : (i===day-1 ? (done?'ok':'now') : '');
+    const inner = i<day-1||(i===day-1&&done) ? '✓' : (i===day-1? String(22+i):'');
+    return `<div class="d ${cls}">${l}<i>${inner}</i></div>`;}).join('');
+  return `<div class="app">
+    <div class="top">▮ Attempt 1 · Day ${day}</div>
+    <div class="week">${days}</div>
+    <div class="cardm"><div class="hn">🚶 Walk</div>
+      <div class="numwrap"><div class="num n1">Day ${day}</div></div>
+      <div style="font:700 13px Inter;color:#dfe7c8;margin-top:6px">Just do this. Get to day ${day+1}.</div></div>
+    <div class="bar"><div class="fill"></div><span class="bt">Slide when done</span><div class="knob">→</div></div>
+    <div class="nav"><b>⌂ Home</b><span>▮ Progress</span><span>▶ Messages</span><span>⚙ Settings</span></div>
+  </div>`;
+}
+const splash = () => `<div class="center"><div class="lockup" style="display:flex;align-items:center">
+  <div class="tile"><span class="S">S</span><span class="dot"></span></div><span class="word">STICK</span></div></div>`;
+
+/* ---------------- STARTUP OPTIONS ---------------- */
+const startup = [
+ { name:'A · Morph & drop', desc:'The splash circle turns into the rounded tile, the dot hops and bounces back into place, STICK slides in, then it fades to Home.', meta:'≈ 0.9 s · tap skips', hap:['light tap when the dot lands'],
+   async play(ph){
+     ph.innerHTML = splash()+appMock(); const tile=ph.querySelector('.tile'), dot=ph.querySelector('.dot'), word=ph.querySelector('.word'), lock=ph.querySelector('.lockup'), app=ph.querySelector('.app');
+     await wait(500);
+     A(tile,[{borderRadius:'50%',transform:'scale(1)'},{borderRadius:'30%',transform:'scale(1.08)'},{borderRadius:'28%',transform:'scale(1)'}],{duration:350});
+     A(dot,[{transform:'translateY(0)'},{transform:'translateY(-46px)',offset:.35},{transform:'translateY(0)',offset:.7},{transform:'translateY(-9px)',offset:.85},{transform:'translateY(0)'}],{duration:520,delay:150,easing:'ease-in-out'});
+     A(word,[{opacity:0,transform:'translateX(30px)'},{opacity:1,transform:'translateX(0)'}],{duration:320,delay:380});
+     A(lock,[{transform:'translateX(0)'},{transform:'translateX(-72px)'}],{duration:360,delay:360});
+     await wait(1000);
+     A(lock.parentElement,[{opacity:1},{opacity:0}],{duration:220}); await A(app,[{opacity:0},{opacity:1}],{duration:260});
+   }},
+ { name:'B · Dot draws the road', desc:'The circle shrinks into the dot; the dot runs along an S-shaped road and draws it in lime, then stops as the full stop. STICK appears. Ties in with the Road home style.', meta:'≈ 1.1 s · tap skips', hap:['tick at the end of the road'],
+   async play(ph){
+     ph.innerHTML = splash()+`<svg class="road" viewBox="0 0 120 120" style="position:absolute;left:50%;top:50%;width:120px;height:120px;transform:translate(-50%,-50%);opacity:0"><path id="rp" d="M86 26 C 70 12, 34 12, 34 36 C 34 58, 86 54, 86 80 C 86 104, 46 106, 32 92" fill="none" stroke="#c6ff3d" stroke-width="14" stroke-linecap="round"/></svg><div class="rdot" style="position:absolute;width:16px;height:16px;border-radius:50%;background:#c6ff3d;left:0;top:0;opacity:0"></div><div class="word2" style="position:absolute;left:0;right:0;top:63%;text-align:center;font:400 34px 'Archivo Black';color:#c6ff3d;opacity:0">STICK</div>`+appMock();
+     const tile=ph.querySelector('.tile'), svg=ph.querySelector('.road'), path=ph.querySelector('#rp'), rdot=ph.querySelector('.rdot'), w=ph.querySelector('.word2'), app=ph.querySelector('.app');
+     const L=path.getTotalLength(); path.style.strokeDasharray=L; path.style.strokeDashoffset=L;
+     await wait(500);
+     await A(tile,[{transform:'scale(1)',opacity:1},{transform:'scale(.14)',opacity:1}],{duration:260,easing:'ease-in'});
+     tile.style.opacity=0; svg.style.opacity=1; rdot.style.opacity=1;
+     const box=svg.getBoundingClientRect(), pb=ph.getBoundingClientRect(), t0=performance.now(), dur=650;
+     await new Promise(res=>{ (function f(now){ const k=Math.min(1,(now-t0)/dur), e=1-Math.pow(1-k,2); path.style.strokeDashoffset=L*(1-e); const p=path.getPointAtLength(L*e);
+         rdot.style.left=(box.left-pb.left+p.x-8)+'px'; rdot.style.top=(box.top-pb.top+p.y-8)+'px'; k<1?requestAnimationFrame(f):res(); })(t0); });
+     A(rdot,[{transform:'scale(1)'},{transform:'scale(1.5)'},{transform:'scale(1)'}],{duration:240});
+     await A(w,[{opacity:0,transform:'translateY(10px)'},{opacity:1,transform:'translateY(0)'}],{duration:280});
+     await wait(450);
+     [svg,rdot,w].forEach(x=>A(x,[{opacity:1},{opacity:0}],{duration:220})); await A(app,[{opacity:0},{opacity:1}],{duration:260});
+   }},
+ { name:'C · Day flip', desc:'The circle becomes the tile, the letter flips like a calendar 1 → 2 → 3, then slams back to "S." with a small shake and a lime ring. Says "we get you past day 3".', meta:'≈ 1.2 s · tap skips', hap:['3 light ticks on the flips','firm tap on the slam'],
+   async play(ph){
+     ph.innerHTML = splash()+`<div class="ring" style="position:absolute;left:50%;top:50%;width:112px;height:112px;margin:-56px;border:4px solid #c6ff3d;border-radius:30%;opacity:0"></div>`+appMock();
+     const tile=ph.querySelector('.tile'), S=ph.querySelector('.S'), dot=ph.querySelector('.dot'), ring=ph.querySelector('.ring'), word=ph.querySelector('.word'), lock=ph.querySelector('.lockup'), app=ph.querySelector('.app');
+     await wait(500);
+     await A(tile,[{borderRadius:'50%'},{borderRadius:'28%'}],{duration:220});
+     dot.style.opacity=0;
+     for (const n of ['1','2','3']) { await A(S,[{transform:'translateX(0) rotateX(0)'},{transform:'translateX(0) rotateX(90deg)'}],{duration:70,easing:'ease-in'}); S.textContent=n; S.style.transform='translateX(0)'; await A(S,[{transform:'rotateX(-90deg)'},{transform:'rotateX(0)'}],{duration:90,easing:'ease-out'}); await wait(40); }
+     S.textContent='S'; S.style.transform='translateX(-6px)'; dot.style.opacity=1;
+     A(tile,[{transform:'scale(1.25)'},{transform:'scale(.95)',offset:.6},{transform:'scale(1)'}],{duration:260});
+     A(lock,[{transform:'translateX(0)'},{transform:'translateX(-5px)',offset:.25},{transform:'translateX(5px)',offset:.5},{transform:'translateX(-3px)',offset:.75},{transform:'translateX(0)'}],{duration:260});
+     A(ring,[{opacity:.9,transform:'scale(1)'},{opacity:0,transform:'scale(1.7)'}],{duration:450});
+     A(word,[{opacity:0,transform:'translateX(30px)'},{opacity:1,transform:'translateX(0)'}],{duration:300,delay:280});
+     setTimeout(()=>A(lock.parentElement,[{transform:'translateX(0)'},{transform:'translateX(-72px)'}],{duration:300}),280);
+     await wait(800);
+     A(lock.parentElement,[{opacity:1},{opacity:0}],{duration:220}); await A(app,[{opacity:0},{opacity:1}],{duration:260});
+   }},
+ { name:'D · Quick fade', desc:'No intro: the splash circle gently zooms and fades straight into Home. Fastest, least "brand moment".', meta:'≈ 0.35 s', hap:['none'],
+   async play(ph){
+     ph.innerHTML = splash()+appMock(); const c=ph.querySelector('.center'), app=ph.querySelector('.app');
+     await wait(500);
+     A(c,[{opacity:1,transform:'scale(1)'},{opacity:0,transform:'scale(1.25)'}],{duration:350}); await A(app,[{opacity:0,transform:'scale(.97)'},{opacity:1,transform:'scale(1)'}],{duration:350});
+   }},
+];
+
+/* ---------------- CHECK-IN OPTIONS ---------------- */
+async function slide(ph){
+  const knob=ph.querySelector('.knob'), fill=ph.querySelector('.fill'), bt=ph.querySelector('.bt'), bar=ph.querySelector('.bar'), W=bar.clientWidth-54;
+  await wait(500);
+  A(bt,[{opacity:1},{opacity:0}],{duration:300});
+  A(fill,[{width:'54px'},{width:(W+54)+'px'}],{duration:550,easing:'ease-in-out'});
+  await A(knob,[{transform:'translateX(0)'},{transform:`translateX(${W}px)`}],{duration:550,easing:'ease-in-out'});
+  knob.textContent='✓';
+  A(bar,[{boxShadow:'0 0 0 0 rgba(198,255,61,.6)'},{boxShadow:'0 0 26px 8px rgba(198,255,61,0)'}],{duration:350});
+}
+function settle(ph){
+  const bt=ph.querySelector('.bt'), knob=ph.querySelector('.knob'), fill=ph.querySelector('.fill');
+  bt.textContent='Done for today ✓'; bt.style.color='#fff';
+  A(bt,[{opacity:0},{opacity:1}],{duration:250}); A(knob,[{opacity:1},{opacity:0}],{duration:250}); A(fill,[{opacity:1},{opacity:.6}],{duration:250});
+}
+function weekFill(ph, delay=0){
+  const now=ph.querySelector('.d.now i'); if(!now) return;
+  setTimeout(()=>{ now.parentElement.classList.remove('now'); now.parentElement.classList.add('ok'); now.textContent='✓';
+    A(now,[{transform:'scale(1)'},{transform:'scale(1.3)'},{transform:'scale(1)'}],{duration:400}); }, delay);
+}
+const checkin = [
+ { name:'1 · Roll + sparks (built now)', desc:'The number rolls up like an odometer, today\'s week circle pops, six small sparks drift up.', meta:'≈ 0.9 s', hap:['ticks while sliding','firm tap at lock','soft tap on the roll'],
+   async play(ph){
+     ph.innerHTML = appMock(); const app=ph.querySelector('.app'); app.style.opacity=1;
+     await slide(ph);
+     const wrap=ph.querySelector('.numwrap'), n1=ph.querySelector('.n1'); const n2=E('<div class="num">Day 4</div>'); wrap.appendChild(n2);
+     A(n1,[{transform:'translateY(0)',opacity:1},{transform:'translateY(-60px)',opacity:0}],{duration:400}); A(n2,[{transform:'translateY(60px)',opacity:0},{transform:'translateY(0)',opacity:1}],{duration:400});
+     weekFill(ph,100);
+     const card=ph.querySelector('.cardm');
+     for(let i=0;i<6;i++){ const s=E('<div class="spark"></div>'); card.appendChild(s); const a=-Math.PI/2+(i-2.5)*.38;
+       A(s,[{opacity:1,transform:'translate(-50%,-50%) translate(0,0) scale(1)'},{opacity:0,transform:`translate(-50%,-50%) translate(${Math.cos(a)*80}px,${Math.sin(a)*80}px) scale(.3)`}],{duration:600,delay:150}); }
+     await wait(500); settle(ph);
+   }},
+ { name:'2 · Lime flood', desc:'Lime pours up from the slide bar and fills the card, the number flips to the next day inside it, then the lime drains away.', meta:'≈ 1.0 s', hap:['firm tap at lock','soft tap at full flood'],
+   async play(ph){
+     ph.innerHTML = appMock(); const app=ph.querySelector('.app'); app.style.opacity=1;
+     const card=ph.querySelector('.cardm'); const fl=E('<div class="flood">Day 3</div>'); card.appendChild(fl);
+     await slide(ph);
+     await A(fl,[{clipPath:'circle(0% at 50% 130%)'},{clipPath:'circle(150% at 50% 130%)'}],{duration:380,easing:'ease-in'});
+     await A(fl,[{transform:'rotateX(0)'},{transform:'rotateX(90deg)'}],{duration:110}); fl.textContent='Day 4'; ph.querySelector('.n1').textContent='Day 4';
+     await A(fl,[{transform:'rotateX(-90deg)'},{transform:'rotateX(0)'}],{duration:130});
+     weekFill(ph,0); await wait(250);
+     await A(fl,[{clipPath:'circle(150% at 50% 130%)'},{clipPath:'circle(0% at 50% 130%)'}],{duration:380,easing:'ease-out'});
+     settle(ph);
+   }},
+ { name:'3 · Stamp', desc:'A big "DAY 4 ✓" stamp slams onto the card with a shake and a flash, the reel style you liked, then shrinks and flies into today\'s week circle.', meta:'≈ 1.1 s', hap:['firm tap at lock','heavy tap on the slam'],
+   async play(ph){
+     ph.innerHTML = appMock(); const app=ph.querySelector('.app'); app.style.opacity=1;
+     const st=E('<div class="stamp">DAY 4 ✓</div>'), fl=E('<div class="flash"></div>'); ph.appendChild(st); ph.appendChild(fl);
+     await slide(ph);
+     await A(st,[{opacity:0,transform:'translate(-50%,-50%) rotate(-12deg) scale(2.4)'},{opacity:1,transform:'translate(-50%,-50%) rotate(-12deg) scale(1)'}],{duration:220,easing:'cubic-bezier(.5,0,.75,0)'});
+     A(fl,[{opacity:.35},{opacity:0}],{duration:250});
+     A(app,[{transform:'translate(0,0)'},{transform:'translate(-6px,3px)',offset:.2},{transform:'translate(6px,-3px)',offset:.45},{transform:'translate(-3px,2px)',offset:.7},{transform:'translate(0,0)'}],{duration:320});
+     ph.querySelector('.n1').textContent='Day 4';
+     await wait(450);
+     const target=ph.querySelector('.d.now i').getBoundingClientRect(), pb=ph.getBoundingClientRect(), sb=st.getBoundingClientRect();
+     const dx=target.left+14-(sb.left+sb.width/2), dy=target.top+14-(sb.top+sb.height/2);
+     await A(st,[{transform:'translate(-50%,-50%) rotate(-12deg) scale(1)',opacity:1},{transform:`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) rotate(0) scale(.12)`,opacity:.2}],{duration:380,easing:'ease-in'});
+     st.style.opacity=0; weekFill(ph,0); settle(ph);
+   }},
+ { name:'4 · Count-up confetti', desc:'The number bounces as it counts up, and lime confetti rains over the whole screen. Biggest celebration; could be kept just for milestones (day 4, 7, 14).', meta:'≈ 1.3 s', hap:['firm tap at lock','soft taps while it counts'],
+   async play(ph){
+     ph.innerHTML = appMock(); const app=ph.querySelector('.app'); app.style.opacity=1;
+     await slide(ph);
+     const n1=ph.querySelector('.n1');
+     for(let i=0;i<26;i++){ const c=E('<div class="conf"></div>'); c.style.left=(Math.random()*270)+'px'; c.style.background=i%3? '#c6ff3d':'#fff'; ph.appendChild(c);
+       A(c,[{opacity:1,transform:'translateY(0) rotate(0)'},{opacity:0,transform:`translateY(${420+Math.random()*180}px) rotate(${Math.random()*720}deg)`}],{duration:1100+Math.random()*400,delay:Math.random()*250,easing:'ease-in'}); }
+     n1.textContent='Day 4';
+     await A(n1,[{transform:'scale(1)'},{transform:'scale(1.35)',offset:.35},{transform:'scale(.92)',offset:.7},{transform:'scale(1)'}],{duration:520});
+     weekFill(ph,0); await wait(300); settle(ph);
+   }},
+];
+
+function mount(list, rowId){
+  const row=document.getElementById(rowId);
+  list.forEach(o=>{
+    const el=E(`<div class="opt"><div class="ph"></div><div class="lbl">${o.name}</div><div class="desc">${o.desc}</div><div class="meta">${o.meta}</div><div>${o.hap.map(h=>`<span class="hap">📳 ${h}</span>`).join('')}</div><button class="rp">↻ Replay</button></div>`);
+    row.appendChild(el); const ph=el.querySelector('.ph');
+    let run=0; const loop=async()=>{ const me=++run; while(me===run){ await o.play(ph); await wait(1600); } };
+    el.querySelector('.rp').onclick=()=>loop(); loop();
+  });
+}
+document.fonts.ready.then(()=>{ mount(startup,'startup'); mount(checkin,'checkin'); });
+</script>
+</body></html>
