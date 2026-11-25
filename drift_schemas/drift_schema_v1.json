@@ -74,6 +74,54 @@
             "default_dart": null,
             "default_client_dart": null,
             "dsl_features": []
+          },
+          {
+            "name": "emoji",
+            "getter_name": "emoji",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": "const CustomExpression('\\'⭐\\'')",
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "template_id",
+            "getter_name": "templateId",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "quiz_quit_day",
+            "getter_name": "quizQuitDay",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [],
+            "type_converter": {
+              "dart_expr": "const EnumNameConverter<QuitDayAnswer>(QuitDayAnswer.values)",
+              "dart_type_name": "QuitDayAnswer"
+            }
+          },
+          {
+            "name": "quiz_reason",
+            "getter_name": "quizReason",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [],
+            "type_converter": {
+              "dart_expr": "const EnumNameConverter<QuitReason>(QuitReason.values)",
+              "dart_type_name": "QuitReason"
+            }
           }
         ],
         "is_virtual": false,
@@ -407,7 +455,7 @@
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"habits\" (\"id\" INTEGER NOT NULL, \"name\" TEXT NOT NULL, \"tiny\" TEXT NULL, \"why\" TEXT NOT NULL, \"reminder_minutes\" INTEGER NOT NULL, \"created_at\" INTEGER NOT NULL, PRIMARY KEY (\"id\"));"
+          "sql": "CREATE TABLE IF NOT EXISTS \"habits\" (\"id\" INTEGER NOT NULL, \"name\" TEXT NOT NULL, \"tiny\" TEXT NULL, \"why\" TEXT NOT NULL, \"reminder_minutes\" INTEGER NOT NULL, \"created_at\" INTEGER NOT NULL, \"emoji\" TEXT NOT NULL DEFAULT '⭐', \"template_id\" TEXT NULL, \"quiz_quit_day\" TEXT NULL, \"quiz_reason\" TEXT NULL, PRIMARY KEY (\"id\"));"
         }
       ]
     },

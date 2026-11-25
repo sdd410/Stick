@@ -242,7 +242,7 @@ void main() {
   test('upgrading from an unknown schema version fails loudly', () async {
     final strategy = db.migration;
     expect(
-      () => strategy.onUpgrade(Migrator(db), 2, 3),
+      () => strategy.onUpgrade(Migrator(db), 1, 2),
       throwsA(isA<UnsupportedError>()),
     );
   });

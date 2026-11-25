@@ -19,7 +19,8 @@ class Habits extends Table {
   IntColumn get reminderMinutes => integer()();
   DateTimeColumn get createdAt => dateTime()();
 
-  // Schema 2 (1.1): onboarding.
+  // Onboarding (1.1). Added to schema 1: no build with an older schema 1
+  // was ever shipped to anyone but the developer (reinstall to upgrade).
   TextColumn get emoji => text().withDefault(const Constant(defaultEmoji))();
   TextColumn get templateId => text().nullable()();
   TextColumn get quizQuitDay => textEnum<QuitDayAnswer>().nullable()();
@@ -90,28 +91,17 @@ class StickDatabase extends _$StickDatabase {
   StickDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 1;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
-    // Schema 1 shipped in 1.0.0. One explicit step per version, and every
-    // new version is dumped to drift_schemas/. An unknown version fails
-    // loudly instead of drift's silent default.
+    // Schema 1 is the first shipped version, so nothing can upgrade yet.
+    // When schemaVersion grows, add one explicit step per version here (and
+    // dump the new schema to drift_schemas/). Failing loudly beats drift's
+    // silent default for a version nobody wrote a step for.
     onUpgrade: (m, from, to) async {
-      for (var v = from; v < to; v++) {
-        switch (v) {
-          case 1:
-            await m.addColumn(habits, habits.emoji);
-            await m.addColumn(habits, habits.templateId);
-            await m.addColumn(habits, habits.quizQuitDay);
-            await m.addColumn(habits, habits.quizReason);
-          default:
-            throw UnsupportedError(
-              'No migration from schema version $v to ${v + 1}',
-            );
-        }
-      }
+      throw UnsupportedError('No migration from schema version $from to $to');
     },
   );
 }
