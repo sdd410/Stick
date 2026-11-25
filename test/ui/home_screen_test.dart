@@ -454,28 +454,33 @@ void main() {
       }
     });
 
-    testWidgets('a slide rolls the number up after the animation', (t) async {
+    testWidgets('a slide floods the card, flips the day, then drains', (
+      t,
+    ) async {
       final c = await pump(
         t,
         state(day: 2),
         sn: slideSnap(),
         before: (c) => c.advance = true,
       );
+      final flood = find.byKey(const Key('check-in-flood'));
+      Finder inFlood(String text) =>
+          find.descendant(of: flood, matching: find.text(text));
       await slideToCheckIn(t);
       await t.pump();
-      await t.pump(const Duration(milliseconds: 150));
-      expect(find.text('Day 2'), findsOneWidget); // rolling out
-      expect(find.text('Day 3'), findsOneWidget); // rolling in
-      expect(find.byKey(const Key('check-in-sparks')), findsOneWidget);
+      await t.pump(const Duration(milliseconds: 250));
+      expect(flood, findsOneWidget); // lime is pouring in
+      expect(inFlood('Day 2'), findsOneWidget); // still the old day
+      await t.pump(const Duration(milliseconds: 400));
+      expect(inFlood('Day 3'), findsOneWidget); // flipped
       await t.pumpAndSettle();
-      expect(find.text('Day 2'), findsNothing);
+      expect(flood, findsNothing); // drained
       expect(find.text('Day 3'), findsOneWidget);
-      expect(find.byKey(const Key('check-in-sparks')), findsNothing);
       expect(find.text('Done for today ✓'), findsOneWidget);
       expect(c.checkIns, 1);
     });
 
-    testWidgets('reduced motion: number changes at once, no sparks', (t) async {
+    testWidgets('reduced motion: number changes at once, no flood', (t) async {
       await pump(
         t,
         state(day: 2),
@@ -488,7 +493,7 @@ void main() {
       await t.pump();
       expect(find.text('Day 2'), findsNothing);
       expect(find.text('Day 3'), findsOneWidget);
-      expect(find.byKey(const Key('check-in-sparks')), findsNothing);
+      expect(find.byKey(const Key('check-in-flood')), findsNothing);
     });
 
     testWidgets('reaching day 4 plays two heavy taps before the screen', (

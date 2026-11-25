@@ -18,8 +18,15 @@ import 'slide_to_check_in.dart';
 import 'tip_bubble.dart';
 import 'week_strip_view.dart';
 
-/// Length of the check-in moment (roll, pop, sparks).
-const _momentLength = Duration(milliseconds: 900);
+/// Length of the check-in moment: lime floods the card, the day flips,
+/// the lime drains away (option 2, "Lime flood").
+const _momentLength = Duration(milliseconds: 1100);
+
+// Phases of the moment, as fractions.
+const _floodFull = 0.32; // lime covers the card
+const _flipOut = 0.42; // old day turned away
+const _flipIn = 0.55; // new day turned in
+const _drainFrom = 0.64; // lime starts to drain
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -54,12 +61,18 @@ class _HomeScreenState extends State<HomeScreen>
   // Day 4 screen is open or about to be; blocks a second push.
   bool _day4Open = false;
 
-  /// Drives the sparks and the timing of the day-4 haptics.
+  /// Drives the flood and the timing of its haptics.
   late final AnimationController _moment = AnimationController(
     vsync: this,
     duration: _momentLength,
   );
   bool _secondHeavyDue = false;
+  bool _fullTapDue = false;
+  bool _day4Taps = false;
+
+  /// The days shown inside the flood: before and after the check-in.
+  int _fromDay = 0;
+  int _toDay = 0;
 
   /// Which one-time tip shows (0 = slide, 1 = Messages, 2 = none).
   int _tip = 0;
@@ -72,8 +85,18 @@ class _HomeScreenState extends State<HomeScreen>
     super.initState();
     _moment
       ..addListener(() {
-        final ms = _moment.value * _momentLength.inMilliseconds;
-        if (_secondHeavyDue && (ms >= 120 || _moment.isCompleted)) {
+        final v = _moment.value;
+        // A soft tap when the lime is full; on day 4 two strong taps there.
+        if (_fullTapDue && (v >= _floodFull || _moment.isCompleted)) {
+          _fullTapDue = false;
+          HapticFeedback.lightImpact();
+          if (_day4Taps) {
+            HapticFeedback.heavyImpact();
+            _secondHeavyDue = true;
+          }
+        }
+        final secondAt = _floodFull + 120 / _momentLength.inMilliseconds;
+        if (_secondHeavyDue && (v >= secondAt || _moment.isCompleted)) {
           _secondHeavyDue = false;
           HapticFeedback.heavyImpact();
         }
@@ -112,15 +135,15 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _checkIn(StickController c) async {
+    final from = c.home?.dayNumber ?? 0;
     await c.checkIn();
     if (!mounted) return;
     final day4 = c.home?.showDay4 == true && !_day4Open;
-    HapticFeedback.lightImpact();
-    if (day4) {
-      HapticFeedback.heavyImpact();
-      _secondHeavyDue = true;
-      _day4Pending = true;
-    }
+    _fromDay = from;
+    _toDay = c.home?.dayNumber ?? from + 1;
+    _fullTapDue = true;
+    _day4Taps = day4;
+    _day4Pending = day4;
     _moment.duration = MediaQuery.disableAnimationsOf(context)
         ? Duration.zero
         : _momentLength;
@@ -380,34 +403,13 @@ class _HomeScreenState extends State<HomeScreen>
   }) {
     final textTheme = Theme.of(context).textTheme;
     final hint = reasonHint(snap.habit.quizReason);
-    final numberKey = ValueKey('${home.dayNumber}-${home.paused}');
     final Widget number = snap.flags.homeStyle == HomeStyle.road
         ? HomeRoad(state: home)
-        : AnimatedSwitcher(
-            duration: noMotion
-                ? Duration.zero
-                : const Duration(milliseconds: 400),
-            transitionBuilder: (child, animation) {
-              // The new number rolls up from below; the old one leaves up.
-              final incoming = child.key == numberKey;
-              final offset = Tween<Offset>(
-                begin: Offset(0, incoming ? 0.6 : -0.6),
-                end: Offset.zero,
-              ).animate(animation);
-              return ClipRect(
-                child: SlideTransition(
-                  position: offset,
-                  child: FadeTransition(opacity: animation, child: child),
-                ),
-              );
-            },
-            child: FittedBox(
-              key: numberKey,
-              fit: BoxFit.scaleDown,
-              child: HomeBigNumber(state: home),
-            ),
+        : FittedBox(
+            fit: BoxFit.scaleDown,
+            child: HomeBigNumber(state: home),
           );
-    return Container(
+    final card = Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: const Color(0xFF16161F),
@@ -439,27 +441,7 @@ class _HomeScreenState extends State<HomeScreen>
             ],
           ),
           const SizedBox(height: 16),
-          Stack(
-            clipBehavior: Clip.none,
-            alignment: Alignment.center,
-            children: [
-              number,
-              AnimatedBuilder(
-                animation: _moment,
-                builder: (context, _) =>
-                    _moment.isAnimating && !noMotion && _moment.value < 0.6
-                    ? Positioned.fill(
-                        child: IgnorePointer(
-                          child: CustomPaint(
-                            key: const Key('check-in-sparks'),
-                            painter: _Sparks(_moment.value / 0.6),
-                          ),
-                        ),
-                      )
-                    : const SizedBox.shrink(),
-              ),
-            ],
-          ),
+          number,
           if (showRescue) ...[
             const SizedBox(height: 20),
             Text(
@@ -519,6 +501,21 @@ class _HomeScreenState extends State<HomeScreen>
         ],
       ),
     );
+    return Stack(
+      children: [
+        card,
+        Positioned.fill(
+          child: IgnorePointer(
+            child: AnimatedBuilder(
+              animation: _moment,
+              builder: (context, _) => _moment.isAnimating && !noMotion
+                  ? _Flood(t: _moment.value, from: _fromDay, to: _toDay)
+                  : const SizedBox.shrink(),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _checkInControl(StickController c, HomeState home, CheckInMode mode) {
@@ -556,28 +553,87 @@ class _HomeScreenState extends State<HomeScreen>
   }
 }
 
-/// Six small lime sparks drifting up from the number and fading.
-class _Sparks extends CustomPainter {
-  _Sparks(this.t);
+/// Lime pours up from the slide bar over the card, the day flips from
+/// [from] to [to] inside it, then the lime drains back down.
+class _Flood extends StatelessWidget {
+  const _Flood({required this.t, required this.from, required this.to});
 
   final double t;
+  final int from;
+  final int to;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final c = size.center(Offset.zero);
-    final paint = Paint()
-      ..color = StickColors.lime.withValues(alpha: (1 - t).clamp(0, 1));
-    for (var i = 0; i < 6; i++) {
-      final a = -math.pi / 2 + (i - 2.5) * 0.35;
-      final d = 30 + 70 * t;
-      canvas.drawCircle(
-        c + Offset(math.cos(a) * d, math.sin(a) * d),
-        4 * (1 - t) + 1,
-        paint,
-      );
+  Widget build(BuildContext context) {
+    final double cover;
+    if (t < _floodFull) {
+      cover = Curves.easeIn.transform(t / _floodFull);
+    } else if (t < _drainFrom) {
+      cover = 1;
+    } else {
+      cover = 1 - Curves.easeOut.transform((t - _drainFrom) / (1 - _drainFrom));
     }
+    // Flip: the old day turns away, then the new one turns in.
+    final double angle;
+    final int shown;
+    if (t < _floodFull) {
+      angle = 0;
+      shown = from;
+    } else if (t < _flipOut) {
+      angle = (t - _floodFull) / (_flipOut - _floodFull) * math.pi / 2;
+      shown = from;
+    } else if (t < _flipIn) {
+      angle = -(1 - (t - _flipOut) / (_flipIn - _flipOut)) * math.pi / 2;
+      shown = to;
+    } else {
+      angle = 0;
+      shown = to;
+    }
+    return ClipRRect(
+      key: const Key('check-in-flood'),
+      borderRadius: BorderRadius.circular(24),
+      child: ClipPath(
+        clipper: _RisingCircle(cover),
+        child: ColoredBox(
+          color: StickColors.lime,
+          child: Center(
+            child: Transform(
+              alignment: Alignment.center,
+              transform: Matrix4.identity()
+                ..setEntry(3, 2, 0.002)
+                ..rotateX(angle),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  'Day $shown',
+                  style: const TextStyle(
+                    fontFamily: 'ArchivoBlack',
+                    fontSize: 96,
+                    color: StickColors.bg,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A circle growing from just below the card's bottom centre.
+class _RisingCircle extends CustomClipper<Path> {
+  _RisingCircle(this.cover);
+
+  final double cover;
+
+  @override
+  Path getClip(Size size) {
+    final centre = Offset(size.width / 2, size.height * 1.3);
+    final full = (Offset.zero - centre).distance;
+    return Path()
+      ..addOval(Rect.fromCircle(center: centre, radius: full * cover));
   }
 
   @override
-  bool shouldRepaint(covariant _Sparks old) => old.t != t;
+  bool shouldReclip(covariant _RisingCircle old) => old.cover != cover;
 }
