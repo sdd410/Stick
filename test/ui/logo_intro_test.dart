@@ -43,17 +43,37 @@ void main() {
     t,
   ) async {
     await pumpIntro(t);
-    expect(find.text('S'), findsOneWidget);
+    expect(find.byKey(const Key('intro-s')), findsOneWidget);
     expect(find.byKey(const Key('intro-dot')), findsOneWidget);
     expect(tileRadius(t), 80); // a circle, like Android's splash
-    await t.pump(const Duration(milliseconds: 400));
+    await t.pump(const Duration(milliseconds: 150));
+    expect(tileRadius(t), 80); // holds the splash frame while it fades
+    await t.pump(const Duration(milliseconds: 450));
     expect(tileRadius(t), lessThan(45)); // rounded square
+  });
+
+  testWidgets('sits on a page, so its text gets no warning underline', (
+    t,
+  ) async {
+    await pumpIntro(t);
+    await t.pump(const Duration(milliseconds: 800));
+    expect(
+      find.ancestor(of: find.text('STICK'), matching: find.byType(Material)),
+      findsWidgets,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(LogoIntro),
+        matching: find.byType(Material),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('STICK slides in, then it is done once', (t) async {
     await pumpIntro(t);
     expect(find.text('STICK'), findsNothing);
-    await t.pump(const Duration(milliseconds: 600));
+    await t.pump(const Duration(milliseconds: 800));
     expect(find.text('STICK'), findsOneWidget);
     await t.pump(const Duration(milliseconds: 250));
     expect(done, 0);
@@ -101,7 +121,7 @@ void main() {
     );
     expect(find.byType(LogoIntro), findsOneWidget);
     expect(find.text('Built for the day you quit.'), findsNothing);
-    await t.pump(const Duration(milliseconds: 1200));
+    await t.pump(const Duration(milliseconds: 1400));
     await t.pumpAndSettle();
     expect(find.byType(LogoIntro), findsNothing);
     expect(find.text('Built for the day you quit.'), findsOneWidget);

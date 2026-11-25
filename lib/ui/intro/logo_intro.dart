@@ -3,14 +3,22 @@ import 'package:flutter/services.dart';
 
 import '../../theme.dart';
 
-const _length = Duration(milliseconds: 1100);
-const double _ms = 1100;
+const _length = Duration(milliseconds: 1300);
+const double _ms = 1300;
 
-// Phases (fractions of the whole).
-const _morphTo = 350 / _ms;
-const _dotFrom = 150 / _ms, _dotTo = 670 / _ms;
-const _wordFrom = 360 / _ms, _wordTo = 720 / _ms;
-const _holdAt = 900 / _ms; // last full frame before the fade
+// Phases (fractions of the whole). The first 200 ms hold a frame identical
+// to Android's splash while the system splash fades out over it.
+const _still = 200 / _ms;
+const _morphTo = 550 / _ms;
+const _dotFrom = 350 / _ms, _dotTo = 870 / _ms;
+const _wordFrom = 560 / _ms, _wordTo = 920 / _ms;
+const _holdAt = 1100 / _ms; // last full frame before the fade
+
+// Where the app icon's dot sits on the 240 dp splash icon (from the icon
+// source: dot centre 44.6, 31.1 dp from the centre, radius 10.7 dp).
+const double _icon = 240;
+const double _dotR = 10.7;
+const double _dotDx = 44.6, _dotDy = 31.1;
 
 const double _splash = 160; // Android 12+ splash circle, in dp
 const double _tileEnd = 120; // tile size next to the word
@@ -54,12 +62,12 @@ class _LogoIntroState extends State<LogoIntro>
       ]).animate(
         CurvedAnimation(
           parent: _c,
-          curve: const Interval(0, _morphTo, curve: Curves.easeOut),
+          curve: const Interval(_still, _morphTo, curve: Curves.easeOut),
         ),
       );
   late final Animation<double> _morph = CurvedAnimation(
     parent: _c,
-    curve: const Interval(0, _morphTo, curve: Curves.easeInOut),
+    curve: const Interval(_still, _morphTo, curve: Curves.easeInOut),
   );
   // The dot hops up and bounces back down into place.
   late final Animation<double> _hop =
@@ -179,7 +187,9 @@ class _LogoIntroState extends State<LogoIntro>
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: _skip,
-      child: ColoredBox(
+      // A Material page: text outside one gets Flutter's yellow warning
+      // underline.
+      child: Material(
         color: StickColors.bg,
         child: Semantics(
           label: 'Stick',
@@ -239,28 +249,27 @@ class _LogoIntroState extends State<LogoIntro>
     child: Stack(
       clipBehavior: Clip.none,
       children: [
-        const Positioned(
-          left: 34,
-          top: 14,
-          child: Text(
-            'S',
-            style: TextStyle(
-              fontFamily: 'ArchivoBlack',
-              fontSize: 112,
-              height: 1.15,
-              color: StickColors.bg,
-            ),
+        // The icon's own S, at the splash icon's size and place.
+        Positioned(
+          left: (_splash - _icon) / 2,
+          top: (_splash - _icon) / 2,
+          width: _icon,
+          height: _icon,
+          child: const Image(
+            key: Key('intro-s'),
+            image: AssetImage('assets/brand/intro_s.png'),
+            filterQuality: FilterQuality.medium,
           ),
         ),
         Positioned(
-          right: 34,
-          bottom: 40,
+          left: _splash / 2 + _dotDx - _dotR,
+          top: _splash / 2 + _dotDy - _dotR,
           child: Transform.translate(
             offset: Offset(0, _hop.value),
             child: Container(
               key: const Key('intro-dot'),
-              width: 22,
-              height: 22,
+              width: _dotR * 2,
+              height: _dotR * 2,
               decoration: const BoxDecoration(
                 color: StickColors.bg,
                 shape: BoxShape.circle,

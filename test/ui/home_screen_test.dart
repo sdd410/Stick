@@ -471,6 +471,8 @@ void main() {
       await t.pump(const Duration(milliseconds: 250));
       expect(flood, findsOneWidget); // lime is pouring in
       expect(inFlood('Day 2'), findsOneWidget); // still the old day
+      // The card under the rising lime still shows the old day too.
+      expect(find.text('Day 3'), findsNothing);
       await t.pump(const Duration(milliseconds: 400));
       expect(inFlood('Day 3'), findsOneWidget); // flipped
       await t.pumpAndSettle();

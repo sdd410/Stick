@@ -403,12 +403,24 @@ class _HomeScreenState extends State<HomeScreen>
   }) {
     final textTheme = Theme.of(context).textTheme;
     final hint = reasonHint(snap.habit.quizReason);
-    final Widget number = snap.flags.homeStyle == HomeStyle.road
-        ? HomeRoad(state: home)
-        : FittedBox(
-            fit: BoxFit.scaleDown,
-            child: HomeBigNumber(state: home),
-          );
+    // Until the lime covers the card, the card keeps showing the old day;
+    // the flip happens inside the flood.
+    final Widget number = AnimatedBuilder(
+      animation: _moment,
+      builder: (context, _) {
+        final early =
+            _moment.isAnimating && !noMotion && _moment.value < _floodFull;
+        final shown = early
+            ? home.copyWith(dayNumber: _fromDay, checkedInToday: false)
+            : home;
+        return snap.flags.homeStyle == HomeStyle.road
+            ? HomeRoad(state: shown)
+            : FittedBox(
+                fit: BoxFit.scaleDown,
+                child: HomeBigNumber(state: shown),
+              );
+      },
+    );
     final card = Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(

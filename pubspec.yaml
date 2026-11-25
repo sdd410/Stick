@@ -66,6 +66,9 @@ dev_dependencies:
 # The following section is specific to Flutter packages.
 flutter:
   uses-material-design: true
+  assets:
+    # The app icon's S without its dot, for the startup logo intro.
+    - assets/brand/intro_s.png
   fonts:
     - family: ArchivoBlack
       fonts:
