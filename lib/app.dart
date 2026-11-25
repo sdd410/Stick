@@ -163,24 +163,23 @@ class _RootState extends State<_Root> {
   );
 
   /// The 2-minute tiny-version timer; finishing it checks the day in.
-  Future<void> _openTimer() => _once('timer', () {
-    final c = StickScope.of(context);
-    final habit = c.snapshot?.habit;
-    if (habit == null) return Future<void>.value();
-    final t = habit.tiny?.trim();
-    return Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        builder: (_) => TinyTimerScreen(
-          emoji: habit.emoji,
-          name: habit.name,
-          tinyText: (t == null || t.isEmpty) ? 'Show up for 2 minutes' : t,
-          onComplete: () async {
-            if (c.home?.checkedInToday == false) await c.checkIn();
-          },
-        ),
-      ),
-    );
-  });
+  Future<void> _openTimer(Future<void> Function() checkIn) =>
+      _once('timer', () {
+        final c = StickScope.of(context);
+        final habit = c.snapshot?.habit;
+        if (habit == null) return Future<void>.value();
+        final t = habit.tiny?.trim();
+        return Navigator.of(context).push<void>(
+          MaterialPageRoute(
+            builder: (_) => TinyTimerScreen(
+              emoji: habit.emoji,
+              name: habit.name,
+              tinyText: (t == null || t.isEmpty) ? 'Show up for 2 minutes' : t,
+              onComplete: checkIn,
+            ),
+          ),
+        );
+      });
 
   /// Once, right after setup, on phones that kill background reminders.
   Future<void> _maybeShowBatteryTip() async {

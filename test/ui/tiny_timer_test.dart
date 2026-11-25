@@ -88,7 +88,9 @@ void main() {
     expect(find.byType(TinyTimerScreen), findsNothing);
   });
 
-  testWidgets('rescue chip → timer → Done checks the day in', (t) async {
+  testWidgets('rescue chip → timer → Done checks in and celebrates day 4', (
+    t,
+  ) async {
     final db = db_.StickDatabase.forTesting(NativeDatabase.memory());
     addTearDown(db.close);
     var now = DateTime(2026, 11, 20, 12);
@@ -120,6 +122,7 @@ void main() {
     });
     await t.pumpAndSettle();
     expect(c.home!.checkedInToday, isTrue);
-    expect(find.text('Done for today ✓'), findsOneWidget);
+    // Day 3 → 4 through the timer still gets the Day 4 screen.
+    expect(find.text('Day 4. You made it past the drop-off.'), findsOneWidget);
   });
 }

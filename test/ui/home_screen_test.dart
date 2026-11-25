@@ -145,7 +145,7 @@ void main() {
     VoidCallback? onOpenProgress,
     VoidCallback? onAddMessage,
     VoidCallback? onPlayReplay,
-    VoidCallback? onOpenTimer,
+    void Function(Future<void> Function())? onOpenTimer,
     bool noMotion = false,
     void Function(FakeController)? before,
   }) async {
@@ -534,7 +534,7 @@ void main() {
         t,
         state(day: 3, rescue: RescueReason.quitDay),
         sn: slideSnap(),
-        onOpenTimer: () => timers++,
+        onOpenTimer: (_) => timers++,
       );
       await t.tap(find.text('⏱ 2-min timer'));
       expect(timers, 1);
@@ -546,7 +546,7 @@ void main() {
         t,
         state(day: 2),
         sn: slideSnap(),
-        onOpenTimer: () => timers++,
+        onOpenTimer: (_) => timers++,
       );
       await t.longPress(find.text('Slide when done'));
       expect(timers, 1);

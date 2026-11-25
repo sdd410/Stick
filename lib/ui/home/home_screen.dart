@@ -37,8 +37,9 @@ class HomeScreen extends StatefulWidget {
   final VoidCallback? onAddMessage;
   final VoidCallback? onPlayReplay;
 
-  /// Opens the 2-minute tiny-version timer.
-  final VoidCallback? onOpenTimer;
+  /// Opens the 2-minute tiny-version timer. Home passes its own check-in,
+  /// so finishing the timer plays the check-in moment and opens Day 4.
+  final void Function(Future<void> Function() checkIn)? onOpenTimer;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -137,6 +138,16 @@ class _HomeScreenState extends State<HomeScreen>
     } finally {
       _day4Open = false;
     }
+  }
+
+  /// Opens the timer with Home's check-in; a no-op if already done today.
+  VoidCallback? _timerOpener(StickController c) {
+    final open = widget.onOpenTimer;
+    if (open == null) return null;
+    return () => open(() async {
+      if (c.home?.checkedInToday ?? true) return;
+      await _guarded(() => _checkIn(c));
+    });
   }
 
   Future<void> _guarded(Future<void> Function() op) async {
@@ -469,7 +480,7 @@ class _HomeScreenState extends State<HomeScreen>
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  if (widget.onOpenTimer != null)
+                  if (_timerOpener(StickScope.of(context)) case final open?)
                     ActionChip(
                       label: const Text('⏱ 2-min timer'),
                       backgroundColor: StickColors.lime,
@@ -478,7 +489,7 @@ class _HomeScreenState extends State<HomeScreen>
                         fontWeight: FontWeight.w700,
                         fontVariations: [FontVariation('wght', 700)],
                       ),
-                      onPressed: widget.onOpenTimer,
+                      onPressed: open,
                     ),
                   if (showReplay)
                     ActionChip(
@@ -515,7 +526,7 @@ class _HomeScreenState extends State<HomeScreen>
       return SlideToCheckIn(
         label: done ? 'Done for today ✓' : 'Slide when done',
         onDone: done || _busy ? null : () => _guarded(() => _checkIn(c)),
-        onLongPress: done ? null : widget.onOpenTimer,
+        onLongPress: done ? null : _timerOpener(c),
       );
     }
     return FilledButton(
