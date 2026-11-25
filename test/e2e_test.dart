@@ -225,6 +225,44 @@ void main() {
       expect(find.byType(ReplayScreen), findsOneWidget);
     });
 
+    testWidgets('a replay launch waits until the app has loaded', (t) async {
+      await t.runAsync(() async {
+        await c.open();
+        await c.createHabit(name: 'Walk', why: 'x', reminderMinutes: 1140);
+        final files = ClipFiles(tmp);
+        final path = files.newPath(ClipType.voice, now);
+        File(path).writeAsBytesSync([1, 2, 3]);
+        await c.addClip(ClipType.voice, path, 3000);
+      });
+      // A fresh controller that is still loading when the app starts.
+      final fresh = StickController(
+        repo: StickRepository(db),
+        clock: () => now,
+        reminders: _Sink(),
+        clipFiles: ClipFiles(tmp),
+      );
+      final ready = Completer<void>();
+      await t.pumpWidget(
+        StickLifecycle(
+          controller: fresh,
+          files: ClipFiles(tmp),
+          recorder: _Recorder(),
+          launchPayload: () async => 'replay',
+          playerFactory: _Player.new,
+          ready: ready.future,
+        ),
+      );
+      await settle(t);
+      expect(find.byType(ReplayScreen), findsNothing);
+      await t.runAsync(() async {
+        await fresh.open();
+        ready.complete();
+      });
+      await settle(t);
+      await settle(t);
+      expect(find.byType(ReplayScreen), findsOneWidget);
+    });
+
     testWidgets('no payload stays on Home', (t) async {
       await boot(t, null);
       expect(find.byType(ReplayScreen), findsNothing);

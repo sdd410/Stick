@@ -17,7 +17,12 @@ class StickLifecycle extends StatefulWidget {
     required this.recorder,
     required this.launchPayload,
     this.playerFactory = videoPlayerClipPlayer,
+    this.ready,
   });
+
+  /// Completes once the first load is done (main loads behind the intro
+  /// instead of before the first frame). Null means already loaded.
+  final Future<void>? ready;
 
   final StickController controller;
   final ClipFiles files;
@@ -40,6 +45,7 @@ class _StickLifecycleState extends State<StickLifecycle>
     // Launched by tapping a reminder: act once the navigator exists.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
+        await widget.ready;
         if (await widget.launchPayload() == 'replay') {
           await openReplayFromNotification(
             widget.files,

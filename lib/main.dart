@@ -26,32 +26,37 @@ Future<void> main() async {
   );
   final files = ClipFiles(await getApplicationDocumentsDirectory());
   final notifications = NotificationService();
-  try {
-    await notifications.init((payload) {
-      if (payload == 'replay') openReplayFromNotification(files);
-    });
-  } catch (e) {
-    // Reminders are best effort; the app still works without them.
-    debugPrint('notification init failed: $e');
-  }
   final controller = StickController(
     repo: StickRepository(StickDatabase()),
     clock: DateTime.now,
     reminders: notifications,
     clipFiles: files,
   );
-  try {
-    await controller.open();
-  } catch (e) {
-    // The app shows a retry screen (controller.loadError).
-    debugPrint('initial open failed: $e');
-  }
+  // Show the first frame right away and load behind the logo intro, so the
+  // system splash does not wait for the database and the reminders.
+  final ready = () async {
+    try {
+      await notifications.init((payload) {
+        if (payload == 'replay') openReplayFromNotification(files);
+      });
+    } catch (e) {
+      // Reminders are best effort; the app still works without them.
+      debugPrint('notification init failed: $e');
+    }
+    try {
+      await controller.open();
+    } catch (e) {
+      // The app shows a retry screen (controller.loadError).
+      debugPrint('initial open failed: $e');
+    }
+  }();
   runApp(
     StickLifecycle(
       controller: controller,
       files: files,
       recorder: DeviceClipRecorder(),
       launchPayload: notifications.launchPayload,
+      ready: ready,
     ),
   );
 }

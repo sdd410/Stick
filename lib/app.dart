@@ -209,7 +209,11 @@ class _RootState extends State<_Root> {
   Widget build(BuildContext context) {
     final c = StickScope.of(context);
     if (!_introDone) {
-      return LogoIntro(onDone: () => setState(() => _introDone = true));
+      return LogoIntro(
+        // Hold the logo until the first load is done (or failed).
+        waiting: !c.loaded && c.loadError == null,
+        onDone: () => setState(() => _introDone = true),
+      );
     }
     if (!c.loaded) {
       if (c.loadError != null) return _LoadErrorScreen(onRetry: _retry);

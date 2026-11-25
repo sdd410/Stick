@@ -14,33 +14,62 @@ void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
   late int done;
 
-  Future<void> pumpIntro(WidgetTester t, {bool noMotion = false}) async {
-    done = 0;
-    await t.pumpWidget(
-      MaterialApp(
-        theme: stickTheme(),
-        home: Builder(
-          builder: (context) => MediaQuery(
-            data: MediaQuery.of(context).copyWith(disableAnimations: noMotion),
-            child: LogoIntro(onDone: () => done++),
-          ),
-        ),
+  Widget intro({bool noMotion = false, bool waiting = false}) => MaterialApp(
+    theme: stickTheme(),
+    home: Builder(
+      builder: (context) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(disableAnimations: noMotion),
+        child: LogoIntro(waiting: waiting, onDone: () => done++),
       ),
-    );
+    ),
+  );
+
+  Future<void> pumpIntro(
+    WidgetTester t, {
+    bool noMotion = false,
+    bool waiting = false,
+  }) async {
+    done = 0;
+    await t.pumpWidget(intro(noMotion: noMotion, waiting: waiting));
   }
 
-  testWidgets('the dot and STICK arrive, then it is done once', (t) async {
+  double tileRadius(WidgetTester t) {
+    final box = t.widget<Container>(find.byKey(const Key('intro-tile')));
+    final r = (box.decoration! as BoxDecoration).borderRadius! as BorderRadius;
+    return r.topLeft.x;
+  }
+
+  testWidgets('starts as the splash circle with S., morphs into the tile', (
+    t,
+  ) async {
     await pumpIntro(t);
     expect(find.text('S'), findsOneWidget);
-    expect(find.text('STICK'), findsNothing);
-    await t.pump(const Duration(milliseconds: 300));
     expect(find.byKey(const Key('intro-dot')), findsOneWidget);
-    await t.pump(const Duration(milliseconds: 300));
+    expect(tileRadius(t), 80); // a circle, like Android's splash
+    await t.pump(const Duration(milliseconds: 400));
+    expect(tileRadius(t), lessThan(45)); // rounded square
+  });
+
+  testWidgets('STICK slides in, then it is done once', (t) async {
+    await pumpIntro(t);
+    expect(find.text('STICK'), findsNothing);
+    await t.pump(const Duration(milliseconds: 600));
     expect(find.text('STICK'), findsOneWidget);
+    await t.pump(const Duration(milliseconds: 250));
     expect(done, 0);
-    await t.pump(const Duration(milliseconds: 300));
+    await t.pump(const Duration(milliseconds: 350));
     expect(done, 1);
     await t.pump(const Duration(seconds: 1));
+    expect(done, 1);
+  });
+
+  testWidgets('while still loading it holds, then finishes', (t) async {
+    await pumpIntro(t, waiting: true);
+    await t.pump(const Duration(seconds: 3));
+    expect(done, 0);
+    expect(find.text('STICK'), findsOneWidget);
+    await t.pumpWidget(intro());
+    await t.pump(const Duration(milliseconds: 400));
     expect(done, 1);
   });
 
@@ -48,7 +77,7 @@ void main() {
     await pumpIntro(t);
     await t.pump(const Duration(milliseconds: 100));
     await t.tap(find.byType(LogoIntro));
-    await t.pump(const Duration(seconds: 1));
+    await t.pump(const Duration(seconds: 2));
     expect(done, 1);
   });
 
@@ -72,7 +101,7 @@ void main() {
     );
     expect(find.byType(LogoIntro), findsOneWidget);
     expect(find.text('Built for the day you quit.'), findsNothing);
-    await t.pump(const Duration(milliseconds: 900));
+    await t.pump(const Duration(milliseconds: 1200));
     await t.pumpAndSettle();
     expect(find.byType(LogoIntro), findsNothing);
     expect(find.text('Built for the day you quit.'), findsOneWidget);
