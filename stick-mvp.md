@@ -104,7 +104,9 @@ A habit app built for the day-3 drop-off, not for perfect streaks. Its one job: 
 - Attempts: list of attempts with their final day count and the day of their first miss (used to learn the quit day and for the progress screen).
 - State: current day count, attempt number, paused or active.
 
-## Pro (one-time unlock, after closed testing)
+## Pro (subscription or one-time, after closed testing)
+Launch set (decided 28 Nov 2026): home-screen widget, more than one habit + goal-hopping lock, history calendar. The rest follow as updates.
+
 - More than one habit.
 - History calendar (the free app has the progress screen instead, feature 11).
 - Themes.
@@ -133,7 +135,7 @@ Testers get everything free during the closed test. The in-app purchase gets add
 - **Design:** background #0b0b12, accent lime #c6ff3d, headings in Archivo Black, body in Inter (matches the reels).
 
 ## Monetization
-Free core app plus a one-time Pro unlock (about $2–4). No ads, no subscription.
+Free core app plus Pro, sold three ways (decided 28 Nov 2026): monthly ₹49 / $1.99, yearly ₹299 / $9.99 with a 7-day free trial, or lifetime ₹699 / $19.99 one-time. All three unlock the same Pro. No ads. See `docs/superpowers/specs/2026-11-28-pro-release-notes.md`.
 
 ## Testing and launch
 - Google Play closed test: **12 testers for 14 days**, recruited from followers.
