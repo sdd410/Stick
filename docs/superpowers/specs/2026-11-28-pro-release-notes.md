@@ -22,7 +22,7 @@ Replaces "one-time unlock, no subscription" in `stick-mvp.md`.
 
 ## Pro features at launch (decided)
 1. **Home-screen widget** (day count on the home screen).
-2. **More than one habit + goal-hopping lock** (a second habit unlocks only after the current one reaches day 14).
+2. **More than one habit + goal-hopping nudge** (always allowed; below day 14 a pause screen asks first) and **archive a habit**.
 3. **History calendar.**
 
 Later Pro updates (keep renewing worth it): themes, custom reminder text, "I can't today" button with patterns.

@@ -105,7 +105,7 @@ A habit app built for the day-3 drop-off, not for perfect streaks. Its one job: 
 - State: current day count, attempt number, paused or active.
 
 ## Pro (subscription or one-time, after closed testing)
-Launch set (decided 28 Nov 2026): home-screen widget, more than one habit + goal-hopping lock, history calendar. The rest follow as updates.
+Launch set (decided 28 Nov 2026): home-screen widget, more than one habit + goal-hopping nudge (replaces the hard lock, 28 Nov 2026) + archive a habit, history calendar. The rest follow as updates.
 
 - More than one habit.
 - History calendar (the free app has the progress screen instead, feature 11).
