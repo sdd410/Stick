@@ -22,9 +22,8 @@ Everything stays on the phone. There's no account, no backend, no analytics, and
 
 ## Status
 
-- The MVP is built and merged to `main`.
-- Next: device testing, the app icon, and a Google Play closed test (12+ testers for 14 days).
-- Free core plus a one-time Pro unlock, added after testing. No Pro feature exists yet; see `stick-mvp.md` for the Pro list.
+- Version 1.1 is in a Google Play closed test.
+- Next: Stick Pro (home-screen widget, more than one habit, history calendar) by subscription or one-time purchase, then the public launch. The free core stays free.
 
 ## Run it
 
@@ -50,12 +49,12 @@ dart format lib test                           # formatting
 dart run build_runner build --delete-conflicting-outputs   # after changing database tables
 ```
 
-Pull requests into `main` run three checks (`.github/workflows/pr-checks.yml`):
+Pull requests into `develop` and `master` run three checks (`.github/workflows/pr-checks.yml`):
 - **Sanity:** no keys committed, lockfile respected, formatting, generated code up to date.
 - **Code check:** analyze and tests.
 - **Build check:** release APK, a forbidden-permission scan, and target/min SDK.
 
-**Release signing** reads `android/key.properties` (git-ignored). Without it, release builds fall back to the debug key, which Play rejects. See `stick-next-steps.md` to create the upload key. Never commit the key or its passwords.
+**Release signing** reads `android/key.properties` (git-ignored). Without it, release builds fall back to the debug key, which Play rejects. See `docs/RELEASING.md` for releases and signing. Never commit the key or its passwords.
 
 ## Project layout
 
@@ -69,16 +68,13 @@ lib/
   ui/           setup, home, record, replay, progress, celebration, settings
 test/           unit, widget and end-to-end tests
 drift_schemas/  database schema history for migrations
-docs/superpowers/  design docs and plans for changes after the MVP
+docs/           releasing guide and Play release notes
 ```
 
 ## Docs
 
 | File | What's in it |
 |---|---|
-| `stick-mvp.md` | The spec: features, decisions, free vs Pro |
-| `Stick Roadmap to Launch.md` | The road to the Play Store |
-| `stick-build-plan.md` | The original build plan |
-| `stick-next-steps.md` | What's left before launch |
 | `TESTING.md` | Device test checklist |
-| `CLAUDE.md` | Working notes for Claude Code |
+| `docs/RELEASING.md` | Branches, the Release to Play workflow and signing secrets |
+| `docs/release-notes/` | What's new text for each Play release |

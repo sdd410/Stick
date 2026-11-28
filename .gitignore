@@ -46,5 +46,23 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
-/docs/
+
+# Private project notes: kept on the developer's machine, not on GitHub.
+# docs/RELEASING.md and docs/release-notes/ stay public (the release workflow needs them).
+/docs/superpowers/
+/docs/play-listing.md
 /.superpowers/
+/CLAUDE.md
+/stick-mvp.md
+/stick-build-plan.md
+/stick-next-steps.md
+/Stick Roadmap to Launch.md
+
+# Build outputs and secrets, wherever they land
+*.apk
+*.aab
+key.properties
+local.properties
+*.jks
+*.keystore
+.env
